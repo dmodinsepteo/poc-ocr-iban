@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ExtractionResult {
+  id           Int      @id @default(autoincrement())
+  fileName     String
+  fileSize     Int
+  savedAt      DateTime @default(now())
+  ocrText      String?
+  extractedData String  // JSON string
+  metadata     FileMetadata[]
+  
+  @@map("extraction_results")
+}
+
+model FileMetadata {
+  id                  Int             @id @default(autoincrement())
+  resultId            Int
+  fieldName           String
+  fieldType           String
+  fieldValue          String?
+  fieldTextExtraction String?
+  fieldValues         String?         // JSON string for multiple values
+  result              ExtractionResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  
+  @@map("file_metadata")
+} 

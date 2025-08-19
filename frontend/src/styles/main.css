@@ -1,0 +1,92 @@
+/* ===== IMPORTS ===== */
+@import "./components.css";
+@import "./processing-steps.css";
+@import "./auth-manager.css";
+@import "./file-selector.css";
+@import "./results-display.css";
+@import "./saved-results-viewer.css";
+
+/* ===== RESET ET STYLES DE BASE ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #333;
+}
+
+#app {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* ===== LAYOUT PRINCIPAL ===== */
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+  color: white;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* ===== SECTIONS ===== */
+.file-section {
+  padding: 40px;
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.error-section {
+  padding: 40px;
+  text-align: center;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #f5c6cb;
+}
+
+.error-message h3 {
+  margin-bottom: 10px;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  .main {
+    margin: 10px;
+  }
+
+  .file-section {
+    padding: 20px;
+  }
+}

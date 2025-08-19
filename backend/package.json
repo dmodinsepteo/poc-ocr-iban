@@ -1,0 +1,24 @@
+{
+  "name": "rib-ocr-backend",
+  "version": "1.0.0",
+  "description": "Backend API pour l'application RIB OCR avec Prisma et SQLite",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+      "dependencies": {
+      "@prisma/client": "^5.7.1",
+      "cors": "^2.8.5",
+      "express": "^4.18.2",
+      "sqlite3": "^5.1.6"
+    },
+    "devDependencies": {
+      "nodemon": "^3.0.1",
+      "prisma": "^5.7.1"
+    }
+}
