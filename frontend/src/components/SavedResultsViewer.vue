@@ -2,16 +2,48 @@
   <div class="saved-results-viewer">
     <h2>Consultation et validation des résultats</h2>
     
-     <!-- Bouton de génération PDF -->
-     <div v-if="savedResults.length > 0" class="pdf-generation-section">
-       <button 
-         @click="generatePDF" 
-         class="btn btn-success btn-large"
-         title="Générer le rapport de test PDF"
-         :disabled="generatingPDF"
-       >
-         {{ generatingPDF ? '⏳ Génération en cours...' : '📄 Générer le rapport PDF' }}
-       </button>
+     <!-- Section de sélection pour PDF -->
+     <div v-if="savedResults.length > 0" class="pdf-selection-section">
+       <div class="pdf-selection-header">
+         <h3>📄 Sélection pour le rapport PDF</h3>
+         <div class="pdf-selection-controls">
+           <button @click="selectAllResults" class="btn btn-secondary btn-sm">
+             ✅ Tout sélectionner
+           </button>
+           <button @click="deselectAllResults" class="btn btn-secondary btn-sm">
+             ❌ Tout désélectionner
+           </button>
+         </div>
+       </div>
+       
+       <div class="pdf-selection-list">
+         <div 
+           v-for="result in savedResults" 
+           :key="result.id" 
+           class="pdf-selection-item"
+         >
+           <label class="pdf-selection-label">
+             <input 
+               type="checkbox" 
+               v-model="selectedForPDF" 
+               :value="result.id"
+               class="pdf-selection-checkbox"
+             />
+             <span class="pdf-selection-text">{{ getResultLabel(result) }}</span>
+           </label>
+         </div>
+       </div>
+       
+       <div class="pdf-generation-section">
+         <button 
+           @click="generatePDF" 
+           class="btn btn-success btn-large"
+           title="Générer le rapport de test PDF"
+           :disabled="generatingPDF || selectedForPDF.length === 0"
+         >
+           {{ generatingPDF ? '⏳ Génération en cours...' : `📄 Générer le rapport PDF (${selectedForPDF.length} résultat${selectedForPDF.length > 1 ? 's' : ''})` }}
+         </button>
+       </div>
      </div>
      
     <!-- Sélection du résultat -->
@@ -169,6 +201,7 @@ export default {
      const validationStats = ref(null)
      const validationStatsCache = ref(new Map()) // Cache pour les statistiques
      const generatingPDF = ref(false)
+     const selectedForPDF = ref([]) // Résultats sélectionnés pour le PDF
 
     const selectedResult = computed(() => {
       return savedResults.value.find(result => result.id === selectedResultId.value)
@@ -318,22 +351,36 @@ export default {
        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
      }
 
+     // Méthodes pour la sélection PDF
+     const selectAllResults = () => {
+       selectedForPDF.value = savedResults.value.map(result => result.id)
+     }
+
+     const deselectAllResults = () => {
+       selectedForPDF.value = []
+     }
+
      // Générer le PDF du rapport de test
      const generatePDF = async () => {
-       if (generatingPDF.value) return
+       if (generatingPDF.value || selectedForPDF.value.length === 0) return
        
        generatingPDF.value = true
        
        try {
          console.log('🔄 Début de la génération du PDF...')
          
+         // Filtrer les résultats sélectionnés
+         const selectedResults = savedResults.value.filter(result => 
+           selectedForPDF.value.includes(result.id)
+         )
+         
          // Créer les maps pour les métadonnées et statistiques
          const metadataMap = new Map()
          const statsMap = new Map()
          
-         // Charger toutes les métadonnées et statistiques
+         // Charger toutes les métadonnées et statistiques pour les résultats sélectionnés
          console.log('📊 Chargement des métadonnées et statistiques...')
-         const loadPromises = savedResults.value.map(async (result) => {
+         const loadPromises = selectedResults.map(async (result) => {
            try {
              const [metadata, stats] = await Promise.all([
                apiResultsService.getResultMetadata(result.id),
@@ -355,9 +402,9 @@ export default {
          
          console.log('📄 Génération du PDF...')
          
-         // Générer le PDF
+         // Générer le PDF avec les résultats sélectionnés
          const doc = await pdfGeneratorService.generateTestReport(
-           savedResults.value,
+           selectedResults,
            metadataMap,
            statsMap
          )
@@ -382,6 +429,8 @@ export default {
          onMounted(async () => {
        await loadSavedResults()
        await loadAllValidationStats() // Charger les statistiques pour tous les résultats
+       // Sélectionner tous les résultats par défaut pour le PDF
+       selectedForPDF.value = savedResults.value.map(result => result.id)
      })
 
     return {
@@ -392,6 +441,7 @@ export default {
       showOCR,
       metadata,
       validationStats,
+      selectedForPDF,
       onResultSelected,
              onValidationUpdated,
        deleteResult,
@@ -402,6 +452,8 @@ export default {
        formatDate,
        formatFileSize,
        getResultLabel,
+       selectAllResults,
+       deselectAllResults,
        generatePDF,
        generatingPDF
     }

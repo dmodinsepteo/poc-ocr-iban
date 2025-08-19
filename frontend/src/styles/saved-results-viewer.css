@@ -128,13 +128,85 @@
   font-size: 0.9rem;
 }
 
+/* Section de sélection pour PDF */
+.pdf-selection-section {
+  margin: 20px 0 30px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.pdf-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.pdf-selection-header h3 {
+  margin: 0;
+  color: #4d54d1;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.pdf-selection-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pdf-selection-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pdf-selection-item {
+  background: white;
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.pdf-selection-item:hover {
+  border-color: #4d54d1;
+  box-shadow: 0 2px 8px rgba(77, 84, 209, 0.1);
+}
+
+.pdf-selection-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.pdf-selection-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #4d54d1;
+  cursor: pointer;
+}
+
+.pdf-selection-text {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+}
+
 /* Section de génération PDF */
 .pdf-generation-section {
   display: flex;
   justify-content: center;
-  margin: 20px 0 30px 0;
   padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 8px;
   border: 1px solid #dee2e6;
 }
@@ -216,5 +288,23 @@
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
+  }
+
+  .pdf-selection-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pdf-selection-controls {
+    justify-content: center;
+  }
+
+  .pdf-selection-list {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-selection-item {
+    padding: 12px;
   }
 }
