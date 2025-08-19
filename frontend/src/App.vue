@@ -12,13 +12,13 @@
       <!-- Onglets de navigation -->
       <div class="tabs-container">
         <button 
-          @click="activeTab = 'extraction'" 
+          @click="() => { activeTab = 'extraction'; saveActiveTab('extraction'); }" 
           :class="['tab-btn', { active: activeTab === 'extraction' }]"
         >
           🔍 Extraction
         </button>
         <button 
-          @click="activeTab = 'consultation'" 
+          @click="() => { activeTab = 'consultation'; saveActiveTab('consultation'); }" 
           :class="['tab-btn', { active: activeTab === 'consultation' }]"
         >
           📋 Consultation
@@ -86,9 +86,25 @@ export default {
     const error = ref(null)
     const activeTab = ref('extraction')
 
+    // Fonction pour sauvegarder l'onglet actif
+    const saveActiveTab = (tab) => {
+      localStorage.setItem('activeTab', tab)
+    }
+
+    // Fonction pour charger l'onglet actif depuis le localStorage
+    const loadActiveTab = () => {
+      const savedTab = localStorage.getItem('activeTab')
+      if (savedTab && ['extraction', 'consultation'].includes(savedTab)) {
+        activeTab.value = savedTab
+      }
+    }
+
     // Initialiser la base de données au démarrage
     onMounted(async () => {
       try {
+        // Charger l'onglet actif depuis le localStorage
+        loadActiveTab()
+        
         await resultsService.initialize()
         await resultsService.migrateFromLocalStorage()
       } catch (error) {
@@ -136,6 +152,7 @@ export default {
       error,
       activeTab,
       isTokenValid,
+      saveActiveTab,
       handleTokenUpdate,
       handleFileSelected,
       handleOCRCompleted,
