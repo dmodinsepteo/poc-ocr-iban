@@ -1,6 +1,6 @@
 <template>
   <div class="saved-results-viewer">
-    <h2>Consultation des résultats sauvegardés</h2>
+    <h2>Consultation et validation des résultats</h2>
     
     <!-- Sélection du résultat -->
     <div class="selection-section">
@@ -31,8 +31,30 @@
       </button>
     </div>
 
+    <!-- Statistiques de validation -->
+    <div v-if="validationStats" class="validation-stats">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-number">{{ validationStats.total }}</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number valid">{{ validationStats.valid }}</span>
+          <span class="stat-label">Valides</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number invalid">{{ validationStats.invalid }}</span>
+          <span class="stat-label">Invalides</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number unvalidated">{{ validationStats.unvalidated }}</span>
+          <span class="stat-label">Non validés</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Affichage du résultat sélectionné -->
-    <div v-if="selectedResult" class="result-display">
+    <div v-if="selectedResult && metadata" class="result-display">
       <div class="result-header">
         <h3>Résultat : {{ selectedResult.fileName }}</h3>
         <div class="result-info">
@@ -41,7 +63,7 @@
         </div>
       </div>
 
-      <!-- Tableau des données -->
+      <!-- Tableau des données avec validation -->
       <div class="table-container">
         <table class="table table-orange">
           <thead>
@@ -49,13 +71,14 @@
               <th>Nom du champ</th>
               <th>Type</th>
               <th>Valeur</th>
+              <th>Validation</th>
               <th>Texte d'extraction</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="field in selectedResult.data" :key="field.field_name">
-              <td>{{ field.field_name }}</td>
-              <td>{{ field.field_type }}</td>
+            <tr v-for="field in metadata" :key="field.id">
+              <td>{{ field.fieldName }}</td>
+              <td>{{ field.fieldType }}</td>
               <td>
                 <div v-if="getDisplayValue(field)" class="value-display">
                   <span v-if="isMultipleValues(field)" class="multiple-values">
@@ -72,7 +95,14 @@
                 </div>
                 <span v-else class="no-value">-</span>
               </td>
-              <td>{{ field.field_text_extraction || '-' }}</td>
+              <td>
+                <FieldValidator 
+                  :field="field" 
+                  :metadata-id="field.id"
+                  @validation-updated="onValidationUpdated"
+                />
+              </td>
+              <td>{{ field.fieldTextExtraction || '-' }}</td>
             </tr>
           </tbody>
         </table>
@@ -107,16 +137,23 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import resultsService from '../services/resultsService.js'
+import { ref, computed, onMounted, watch } from 'vue'
+import apiResultsService from '../services/apiResultsService.js'
+import validationService from '../services/validationService.js'
+import FieldValidator from './FieldValidator.vue'
 
 export default {
   name: 'SavedResultsViewer',
+  components: {
+    FieldValidator
+  },
   setup() {
     const savedResults = ref([])
     const selectedResultId = ref('')
     const showJson = ref(false)
     const showOCR = ref(false)
+    const metadata = ref([])
+    const validationStats = ref(null)
 
     const selectedResult = computed(() => {
       return savedResults.value.find(result => result.id === selectedResultId.value)
@@ -124,16 +161,49 @@ export default {
 
     const loadSavedResults = async () => {
       try {
-        savedResults.value = await resultsService.getAllResults()
+        savedResults.value = await apiResultsService.getAllResults()
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error)
         savedResults.value = []
       }
     }
 
-    const onResultSelected = () => {
+    const loadMetadata = async (resultId) => {
+      try {
+        metadata.value = await apiResultsService.getResultMetadata(resultId)
+      } catch (error) {
+        console.error('Erreur lors du chargement des métadonnées:', error)
+        metadata.value = []
+      }
+    }
+
+    const loadValidationStats = async (resultId) => {
+      try {
+        validationStats.value = await validationService.getValidationStats(resultId)
+      } catch (error) {
+        console.error('Erreur lors du chargement des statistiques:', error)
+        validationStats.value = null
+      }
+    }
+
+    const onResultSelected = async () => {
       showJson.value = false
       showOCR.value = false
+      
+      if (selectedResultId.value) {
+        await loadMetadata(selectedResultId.value)
+        await loadValidationStats(selectedResultId.value)
+      } else {
+        metadata.value = []
+        validationStats.value = null
+      }
+    }
+
+    const onValidationUpdated = async () => {
+      // Recharger les statistiques après une validation
+      if (selectedResultId.value) {
+        await loadValidationStats(selectedResultId.value)
+      }
     }
 
     const deleteResult = async () => {
@@ -141,9 +211,11 @@ export default {
       
       if (confirm(`Êtes-vous sûr de vouloir supprimer le résultat "${selectedResult.value.fileName}" ?`)) {
         try {
-          await resultsService.deleteResult(selectedResultId.value)
+          await apiResultsService.deleteResult(selectedResultId.value)
           await loadSavedResults() // Recharger la liste
           selectedResultId.value = ''
+          metadata.value = []
+          validationStats.value = null
         } catch (error) {
           console.error('Erreur lors de la suppression:', error)
           alert('Erreur lors de la suppression du résultat')
@@ -160,17 +232,17 @@ export default {
     }
 
     const getDisplayValue = (field) => {
-      if (field.field_values && Array.isArray(field.field_values) && field.field_values.length > 0) {
-        return field.field_values
+      if (field.fieldValues && Array.isArray(field.fieldValues) && field.fieldValues.length > 0) {
+        return field.fieldValues
       }
-      if (field.field_value) {
-        return field.field_value
+      if (field.fieldValue) {
+        return field.fieldValue
       }
       return null
     }
 
     const isMultipleValues = (field) => {
-      return field.field_values && Array.isArray(field.field_values) && field.field_values.length > 0
+      return field.fieldValues && Array.isArray(field.fieldValues) && field.fieldValues.length > 0
     }
 
     const formatDate = (dateString) => {
@@ -195,7 +267,10 @@ export default {
       selectedResult,
       showJson,
       showOCR,
+      metadata,
+      validationStats,
       onResultSelected,
+      onValidationUpdated,
       deleteResult,
       toggleJson,
       toggleOCR,
@@ -208,4 +283,5 @@ export default {
 }
 </script>
 
+ 
  

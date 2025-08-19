@@ -11,26 +11,38 @@ datasource db {
 }
 
 model ExtractionResult {
-  id           Int      @id @default(autoincrement())
-  fileName     String
-  fileSize     Int
-  savedAt      DateTime @default(now())
-  ocrText      String?
-  extractedData String  // JSON string
-  metadata     FileMetadata[]
-  
+  id            Int            @id @default(autoincrement())
+  fileName      String
+  fileSize      Int
+  savedAt       DateTime       @default(now())
+  ocrText       String?
+  extractedData String // JSON string
+  metadata      FileMetadata[]
+
   @@map("extraction_results")
 }
 
 model FileMetadata {
-  id                  Int             @id @default(autoincrement())
+  id                  Int              @id @default(autoincrement())
   resultId            Int
   fieldName           String
   fieldType           String
   fieldValue          String?
   fieldTextExtraction String?
-  fieldValues         String?         // JSON string for multiple values
+  fieldValues         String? // JSON string for multiple values
   result              ExtractionResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
-  
+  validation          FieldValidation?
+
   @@map("file_metadata")
-} 
+}
+
+model FieldValidation {
+  id            Int          @id @default(autoincrement())
+  metadataId    Int          @unique
+  isValid       Boolean      @default(true)
+  expectedValue String?
+  correctedAt   DateTime     @default(now())
+  metadata      FileMetadata @relation(fields: [metadataId], references: [id], onDelete: Cascade)
+
+  @@map("field_validations")
+}

@@ -77,6 +77,42 @@ app.get('/api/results/:id', async (req, res) => {
   }
 });
 
+// GET /api/results/:id/metadata - Récupérer les métadonnées d'un résultat avec validations
+app.get('/api/results/:id/metadata', async (req, res) => {
+  try {
+    const metadata = await prisma.fileMetadata.findMany({
+      where: {
+        resultId: parseInt(req.params.id)
+      },
+      include: {
+        validation: true
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    });
+
+    const formattedMetadata = metadata.map(item => ({
+      id: item.id,
+      fieldName: item.fieldName,
+      fieldType: item.fieldType,
+      fieldValue: item.fieldValue,
+      fieldTextExtraction: item.fieldTextExtraction,
+      fieldValues: item.fieldValues ? JSON.parse(item.fieldValues) : null,
+      validation: item.validation ? {
+        isValid: item.validation.isValid,
+        expectedValue: item.validation.expectedValue,
+        correctedAt: item.validation.correctedAt
+      } : null
+    }));
+
+    res.json(formattedMetadata);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des métadonnées:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // POST /api/results - Sauvegarder un nouveau résultat
 app.post('/api/results', async (req, res) => {
   try {
@@ -95,7 +131,7 @@ app.post('/api/results', async (req, res) => {
       }
     });
 
-    // Créer les métadonnées pour chaque champ
+    // Créer les métadonnées pour chaque champ avec validation par défaut
     for (const field of extractedData) {
       await prisma.fileMetadata.create({
         data: {
@@ -104,7 +140,14 @@ app.post('/api/results', async (req, res) => {
           fieldType: field.field_type,
           fieldValue: field.field_value || null,
           fieldTextExtraction: field.field_text_extraction || null,
-          fieldValues: field.field_values ? JSON.stringify(field.field_values) : null
+          fieldValues: field.field_values ? JSON.stringify(field.field_values) : null,
+          validation: {
+            create: {
+              isValid: true,
+              expectedValue: null,
+              correctedAt: new Date()
+            }
+          }
         }
       });
     }
@@ -189,6 +232,83 @@ app.get('/api/results/count', async (req, res) => {
     res.json({ count });
   } catch (error) {
     console.error('Erreur lors du comptage:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Routes de validation
+const validationService = require('./validationService');
+
+// POST /api/validations - Sauvegarder une validation
+app.post('/api/validations', async (req, res) => {
+  try {
+    const { metadataId, isValid, expectedValue } = req.body;
+    
+    if (metadataId === undefined || isValid === undefined) {
+      return res.status(400).json({ error: 'metadataId et isValid sont requis' });
+    }
+    
+    const validation = await validationService.saveValidation(metadataId, {
+      isValid,
+      expectedValue: expectedValue || null
+    });
+    
+    res.json(validation);
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde de la validation:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/validations/result/:resultId - Récupérer toutes les validations d'un résultat
+app.get('/api/validations/result/:resultId', async (req, res) => {
+  try {
+    const resultId = parseInt(req.params.resultId);
+    const validations = await validationService.getValidationsForResult(resultId);
+    res.json(validations);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des validations:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/validations/:metadataId - Récupérer une validation spécifique
+app.get('/api/validations/:metadataId', async (req, res) => {
+  try {
+    const metadataId = parseInt(req.params.metadataId);
+    const validation = await validationService.getValidation(metadataId);
+    
+    if (!validation) {
+      return res.status(404).json({ error: 'Validation non trouvée' });
+    }
+    
+    res.json(validation);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la validation:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// DELETE /api/validations/:metadataId - Supprimer une validation
+app.delete('/api/validations/:metadataId', async (req, res) => {
+  try {
+    const metadataId = parseInt(req.params.metadataId);
+    await validationService.deleteValidation(metadataId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la validation:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/validations/stats/:resultId - Récupérer les statistiques de validation
+app.get('/api/validations/stats/:resultId', async (req, res) => {
+  try {
+    const resultId = parseInt(req.params.resultId);
+    const stats = await validationService.getValidationStats(resultId);
+    res.json(stats);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

@@ -90,6 +90,20 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
+/* Boutons de petite taille */
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-sm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
 /* Boutons avec gradient */
 .btn-gradient {
   background: linear-gradient(135deg, #ff6136 0%, #e55a2e 100%);
