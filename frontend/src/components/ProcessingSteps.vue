@@ -107,6 +107,14 @@
       </div>
     </div>
 
+    <!-- Messages de retry et d'erreurs -->
+    <div v-if="retryMessages.length > 0" class="retry-messages">
+      <div v-for="(message, index) in retryMessages" :key="index" class="retry-message" :class="message.type">
+        <span class="retry-icon">{{ message.icon }}</span>
+        <span class="retry-text">{{ message.text }}</span>
+      </div>
+    </div>
+
     <!-- Bouton traitement complet -->
     <div class="complete-process">
       <button 
@@ -147,6 +155,7 @@ export default {
     const isProcessing = ref(false)
     const ocrCopyStatus = ref('Copier')
     const saveStatus = ref('')
+    const retryMessages = ref([])
 
     const ocrStatus = computed(() => {
       if (isOcring.value) return 'processing'
@@ -167,6 +176,25 @@ export default {
 
     const isTokenValid = computed(() => authService.token.value !== null && authService.tokenExpiry.value && Date.now() < authService.tokenExpiry.value)
 
+    // Fonction pour ajouter un message de retry
+    const addRetryMessage = (type, text, icon) => {
+      const message = { type, text, icon, timestamp: Date.now() }
+      retryMessages.value.push(message)
+      
+      // Supprimer le message après 10 secondes
+      setTimeout(() => {
+        const index = retryMessages.value.findIndex(m => m.timestamp === message.timestamp)
+        if (index > -1) {
+          retryMessages.value.splice(index, 1)
+        }
+      }, 10000)
+    }
+
+    // Fonction pour nettoyer les messages
+    const clearRetryMessages = () => {
+      retryMessages.value = []
+    }
+
     const getStatusText = (status) => {
       switch (status) {
         case 'pending': return 'En attente'
@@ -180,11 +208,45 @@ export default {
       if (!props.selectedFile) return
       
       isOcring.value = true
+      clearRetryMessages()
+      
       try {
+        // Intercepter les messages de retry depuis la console
+        const originalWarn = console.warn
+        const originalLog = console.log
+        const originalError = console.error
+        
+        console.warn = (message) => {
+          if (message.includes('Tentative') && message.includes('échouée')) {
+            addRetryMessage('warning', message, '⚠️')
+          }
+          originalWarn(message)
+        }
+        
+        console.log = (message) => {
+          if (message.includes('Attente de') && message.includes('avant la prochaine tentative')) {
+            addRetryMessage('info', message, '⏳')
+          }
+          originalLog(message)
+        }
+        
+        console.error = (message) => {
+          if (message.includes('Échec après') || message.includes('Erreur non retryable')) {
+            addRetryMessage('error', message, '❌')
+          }
+          originalError(message)
+        }
+        
         ocrText.value = await ocrService.performOCR(props.selectedFile)
         emit('ocr-completed', ocrText.value)
+        
+        // Restaurer les fonctions console
+        console.warn = originalWarn
+        console.log = originalLog
+        console.error = originalError
       } catch (error) {
         console.error('Erreur OCR:', error)
+        addRetryMessage('error', `Erreur finale: ${error.message}`, '❌')
       } finally {
         isOcring.value = false
       }
@@ -194,12 +256,46 @@ export default {
       if (!ocrText.value) return
       
       isExtracting.value = true
+      clearRetryMessages()
+      
       try {
+        // Intercepter les messages de retry depuis la console
+        const originalWarn = console.warn
+        const originalLog = console.log
+        const originalError = console.error
+        
+        console.warn = (message) => {
+          if (message.includes('Tentative') && message.includes('échouée')) {
+            addRetryMessage('warning', message, '⚠️')
+          }
+          originalWarn(message)
+        }
+        
+        console.log = (message) => {
+          if (message.includes('Attente de') && message.includes('avant la prochaine tentative')) {
+            addRetryMessage('info', message, '⏳')
+          }
+          originalLog(message)
+        }
+        
+        console.error = (message) => {
+          if (message.includes('Échec après') || message.includes('Erreur non retryable')) {
+            addRetryMessage('error', message, '❌')
+          }
+          originalError(message)
+        }
+        
         const data = await ocrService.extractData(ocrText.value)
         extractedData.value = data
         emit('extraction-completed', data)
+        
+        // Restaurer les fonctions console
+        console.warn = originalWarn
+        console.log = originalLog
+        console.error = originalError
       } catch (error) {
         console.error('Erreur extraction:', error)
+        addRetryMessage('error', `Erreur finale: ${error.message}`, '❌')
       } finally {
         isExtracting.value = false
       }
@@ -209,13 +305,47 @@ export default {
       if (!props.selectedFile) return
       
       isProcessing.value = true
+      clearRetryMessages()
+      
       try {
+        // Intercepter les messages de retry depuis la console
+        const originalWarn = console.warn
+        const originalLog = console.log
+        const originalError = console.error
+        
+        console.warn = (message) => {
+          if (message.includes('Tentative') && message.includes('échouée')) {
+            addRetryMessage('warning', message, '⚠️')
+          }
+          originalWarn(message)
+        }
+        
+        console.log = (message) => {
+          if (message.includes('Attente de') && message.includes('avant la prochaine tentative')) {
+            addRetryMessage('info', message, '⏳')
+          }
+          originalLog(message)
+        }
+        
+        console.error = (message) => {
+          if (message.includes('Échec après') || message.includes('Erreur non retryable')) {
+            addRetryMessage('error', message, '❌')
+          }
+          originalError(message)
+        }
+        
         const result = await ocrService.processFile(props.selectedFile)
         ocrText.value = result.ocrText
         extractedData.value = result.extractedData
         emit('processing-completed', result)
+        
+        // Restaurer les fonctions console
+        console.warn = originalWarn
+        console.log = originalLog
+        console.error = originalError
       } catch (error) {
         console.error('Erreur traitement complet:', error)
+        addRetryMessage('error', `Erreur finale: ${error.message}`, '❌')
       } finally {
         isProcessing.value = false
       }
@@ -298,6 +428,7 @@ export default {
       isTokenValid,
       ocrCopyStatus,
       saveStatus,
+      retryMessages,
       getStatusText,
       performOCR,
       extractData,
