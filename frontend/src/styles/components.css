@@ -24,25 +24,25 @@
 
 /* Boutons avec couleurs spécifiques */
 .btn-primary {
-  background: #ff6136;
+  background: linear-gradient(135deg, #64e4dd, #4d54d1);
   color: white;
-  box-shadow: 0 2px 4px rgba(255, 97, 54, 0.2);
+  box-shadow: 0 2px 4px rgba(77, 84, 209, 0.2);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #e55a2e;
-  box-shadow: 0 4px 8px rgba(255, 97, 54, 0.3);
+  background: linear-gradient(135deg, #4d54d1, #ff96de);
+  box-shadow: 0 4px 8px rgba(77, 84, 209, 0.3);
 }
 
 .btn-secondary {
-  background: #2e3862;
+  background: linear-gradient(135deg, #ff96de, #ff8e8b);
   color: white;
-  box-shadow: 0 2px 4px rgba(46, 56, 98, 0.2);
+  box-shadow: 0 2px 4px rgba(255, 142, 139, 0.2);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #1e2a4a;
-  box-shadow: 0 4px 8px rgba(46, 56, 98, 0.3);
+  background: linear-gradient(135deg, #ff8e8b, #ff614c);
+  box-shadow: 0 4px 8px rgba(255, 142, 139, 0.3);
 }
 
 .btn-success {
@@ -106,14 +106,21 @@
 
 /* Boutons avec gradient */
 .btn-gradient {
-  background: linear-gradient(135deg, #ff6136 0%, #e55a2e 100%);
+  background: linear-gradient(
+    135deg,
+    #64e4dd,
+    #4d54d1 50%,
+    #ff96de 75%,
+    #ff8e8b 90%,
+    #ff614c
+  );
   color: white;
-  box-shadow: 0 5px 15px rgba(255, 97, 54, 0.3);
+  box-shadow: 0 5px 15px rgba(77, 84, 209, 0.3);
 }
 
 .btn-gradient:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 97, 54, 0.4);
+  box-shadow: 0 8px 25px rgba(77, 84, 209, 0.4);
 }
 
 /* Conteneurs */
@@ -151,7 +158,14 @@
 }
 
 .table th {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(
+    135deg,
+    #64e4dd,
+    #4d54d1 50%,
+    #ff96de 75%,
+    #ff8e8b 90%,
+    #ff614c
+  );
   color: white;
   font-weight: 600;
 }
@@ -167,12 +181,12 @@
 
 /* Tableaux avec en-tête orange */
 .table-orange th {
-  background: linear-gradient(135deg, #ff6136 0%, #e55a2e 100%);
+  background: linear-gradient(135deg, #ff96de, #ff8e8b 50%, #ff614c);
 }
 
 /* Tableaux avec en-tête bleu */
 .table-blue th {
-  background: linear-gradient(135deg, #2e3862 0%, #1e2a4a 100%);
+  background: linear-gradient(135deg, #64e4dd, #4d54d1);
 }
 
 /* Statuts */
@@ -266,8 +280,8 @@
 
 .select:focus {
   outline: none;
-  border-color: #ff6136;
-  box-shadow: 0 0 0 2px rgba(255, 97, 54, 0.2);
+  border-color: #4d54d1;
+  box-shadow: 0 0 0 2px rgba(77, 84, 209, 0.2);
 }
 
 /* Responsive */

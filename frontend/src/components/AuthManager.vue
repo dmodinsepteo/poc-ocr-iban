@@ -1,38 +1,42 @@
 <template>
   <div class="auth-manager">
-    <div class="auth-status">
-      <h3>Statut d'authentification</h3>
-      <div class="status-indicator">
-        <span class="status-dot" :class="{ 'valid': isTokenValid, 'invalid': !isTokenValid }"></span>
-        <span class="status-text">
-          {{ isTokenValid ? 'Token valide' : 'Token invalide ou expiré' }}
-        </span>
+    <!-- Section gauche : Statut et actions -->
+    <div class="auth-left">
+      <div class="auth-status">
+        <div class="status-indicator">
+          <span class="status-dot" :class="{ 'valid': isTokenValid, 'invalid': !isTokenValid }"></span>
+          <span class="status-text">
+            {{ isTokenValid ? 'Token valide' : 'Token invalide ou expiré' }}
+          </span>
+        </div>
+        <p v-if="tokenExpiry" class="token-expiry">
+          Expire le: {{ tokenExpiry }}
+        </p>
       </div>
-      <p v-if="tokenExpiry" class="token-expiry">
-        Expire le: {{ tokenExpiry }}
-      </p>
-    </div>
-    
-    <div class="auth-actions">
-      <button @click="generateToken" :disabled="isGenerating" class="btn btn-primary">
-        <span v-if="!isGenerating">🔑 Générer un token</span>
-        <span v-else>⏳ Génération...</span>
-      </button>
-      <button @click="clearToken" class="btn btn-secondary">
-        🗑️ Effacer le token
-      </button>
-    </div>
-
-    <!-- Affichage du token -->
-    <div v-if="currentToken" class="token-display">
-      <div class="token-header">
-        <h4>Token généré :</h4>
-        <button @click="copyToken" class="btn btn-primary" :title="copyStatus">
-          {{ copyStatus === 'Copié !' ? '✅' : '📋' }}
+      
+      <div class="auth-actions">
+        <button @click="generateToken" :disabled="isGenerating" class="btn btn-primary">
+          <span v-if="!isGenerating">🔑 Générer</span>
+          <span v-else>⏳...</span>
+        </button>
+        <button @click="clearToken" class="btn btn-secondary">
+          🗑️ Effacer
         </button>
       </div>
-      <div class="token-container">
-        <code class="token-text">{{ currentToken }}</code>
+    </div>
+
+    <!-- Section droite : Token généré -->
+    <div v-if="currentToken" class="auth-right">
+      <div class="token-display">
+        <div class="token-header">
+          <span class="token-label">Token :</span>
+          <button @click="copyToken" class="btn-copy" :title="copyStatus">
+            {{ copyStatus === 'Copié !' ? '✅' : '📋' }}
+          </button>
+        </div>
+        <div class="token-container">
+          <code class="token-text">{{ currentToken }}</code>
+        </div>
       </div>
     </div>
   </div>

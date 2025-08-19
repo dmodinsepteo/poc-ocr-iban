@@ -6,55 +6,63 @@
     </header>
 
     <main class="main">
-      <!-- Gestionnaire d'authentification -->
-      <AuthManager @token-updated="handleTokenUpdate" />
-
-      <!-- Onglets de navigation -->
-      <div class="tabs-container">
-        <button 
-          @click="() => { activeTab = 'extraction'; saveActiveTab('extraction'); }" 
-          :class="['tab-btn', { active: activeTab === 'extraction' }]"
-        >
-          🔍 Extraction
-        </button>
-        <button 
-          @click="() => { activeTab = 'consultation'; saveActiveTab('consultation'); }" 
-          :class="['tab-btn', { active: activeTab === 'consultation' }]"
-        >
-          📋 Consultation
-        </button>
-      </div>
-
-      <!-- Contenu des onglets -->
-      <div v-if="activeTab === 'extraction'" class="tab-content">
-        <!-- Étapes de traitement -->
-        <ProcessingSteps 
-          :selected-file="selectedFile"
-          @file-selected="handleFileSelected"
-          @ocr-completed="handleOCRCompleted"
-          @extraction-completed="handleExtractionCompleted"
-          @processing-completed="handleProcessingCompleted"
-        />
-
-        <!-- Affichage des résultats -->
-        <ResultsDisplay 
-          v-if="extractedData"
-          :extracted-data="extractedData"
-          :ocr-text="ocrText"
-        />
-      </div>
-
-      <div v-else-if="activeTab === 'consultation'" class="tab-content">
-        <!-- Consultation des résultats sauvegardés -->
-        <SavedResultsViewer />
-      </div>
-
-      <!-- Section d'erreur -->
-      <section v-if="error" class="error-section">
-        <div class="error-message">
-          <h3>Erreur</h3>
-          <p>{{ error }}</p>
+      <!-- Section d'authentification -->
+      <section class="auth-section">
+        <div class="auth-container">
+          <h2>🔐 Authentification</h2>
+          <AuthManager @token-updated="handleTokenUpdate" />
         </div>
+      </section>
+
+      <!-- Section principale de l'application -->
+      <section class="app-section">
+        <!-- Onglets de navigation -->
+        <div class="tabs-container">
+          <button 
+            @click="() => { activeTab = 'extraction'; saveActiveTab('extraction'); }" 
+            :class="['tab-btn', { active: activeTab === 'extraction' }]"
+          >
+            🔍 Extraction
+          </button>
+          <button 
+            @click="() => { activeTab = 'consultation'; saveActiveTab('consultation'); }" 
+            :class="['tab-btn', { active: activeTab === 'consultation' }]"
+          >
+            📋 Consultation
+          </button>
+        </div>
+
+        <!-- Contenu des onglets -->
+        <div v-if="activeTab === 'extraction'" class="tab-content">
+          <!-- Étapes de traitement -->
+          <ProcessingSteps 
+            :selected-file="selectedFile"
+            @file-selected="handleFileSelected"
+            @ocr-completed="handleOCRCompleted"
+            @extraction-completed="handleExtractionCompleted"
+            @processing-completed="handleProcessingCompleted"
+          />
+
+          <!-- Affichage des résultats -->
+          <ResultsDisplay 
+            v-if="extractedData"
+            :extracted-data="extractedData"
+            :ocr-text="ocrText"
+          />
+        </div>
+
+        <div v-else-if="activeTab === 'consultation'" class="tab-content">
+          <!-- Consultation des résultats sauvegardés -->
+          <SavedResultsViewer />
+        </div>
+
+        <!-- Section d'erreur -->
+        <section v-if="error" class="error-section">
+          <div class="error-message">
+            <h3>Erreur</h3>
+            <p>{{ error }}</p>
+          </div>
+        </section>
       </section>
     </main>
   </div>
@@ -164,12 +172,45 @@ export default {
   </script>
 
 <style scoped>
+/* Section d'authentification */
+.auth-section {
+  background: linear-gradient(135deg, #64e4dd, #4d54d1 50%, #ff96de 75%, #ff8e8b 90%, #ff614c);
+  padding: 20px;
+  margin-bottom: 25px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.auth-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.auth-container h2 {
+  color: white;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Section principale de l'application */
+.app-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
 /* Styles pour les onglets */
 .tabs-container {
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
-  padding: 0 20px;
+  padding: 20px 20px 0 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
 }
 
 .tab-btn {
@@ -187,28 +228,38 @@ export default {
 
 .tab-btn:hover {
   background: #e9ecef;
-  color: #2e3862;
+  color: #4d54d1;
 }
 
 .tab-btn.active {
-  background: #2e3862;
+  background: linear-gradient(135deg, #64e4dd, #4d54d1);
   color: white;
-  border-color: #2e3862;
-  box-shadow: 0 2px 8px rgba(46, 56, 98, 0.2);
+  border-color: #4d54d1;
+  box-shadow: 0 2px 8px rgba(77, 84, 209, 0.3);
 }
 
 .tab-content {
   background: white;
-  border: 1px solid #dee2e6;
-  border-radius: 0 8px 8px 8px;
-  margin-top: -1px;
+  border: none;
+  border-radius: 0;
+  margin-top: 0;
   min-height: 400px;
 }
 
 @media (max-width: 768px) {
+  .auth-section {
+    padding: 20px 15px;
+    margin-bottom: 20px;
+  }
+  
+  .auth-container h2 {
+    font-size: 1.3rem;
+  }
+  
   .tabs-container {
     flex-direction: column;
     gap: 5px;
+    padding: 15px 15px 0 15px;
   }
   
   .tab-btn {
@@ -217,8 +268,7 @@ export default {
   }
   
   .tab-content {
-    border-radius: 8px;
-    margin-top: 0;
+    border-radius: 0;
   }
 }
 </style> 
