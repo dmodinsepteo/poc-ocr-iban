@@ -2,6 +2,18 @@
   <div class="saved-results-viewer">
     <h2>Consultation et validation des résultats</h2>
     
+     <!-- Bouton de génération PDF -->
+     <div v-if="savedResults.length > 0" class="pdf-generation-section">
+       <button 
+         @click="generatePDF" 
+         class="btn btn-success btn-large"
+         title="Générer le rapport de test PDF"
+         :disabled="generatingPDF"
+       >
+         {{ generatingPDF ? '⏳ Génération en cours...' : '📄 Générer le rapport PDF' }}
+       </button>
+     </div>
+     
     <!-- Sélection du résultat -->
     <div class="selection-section">
       <label for="result-select" class="select-label">Sélectionner un résultat :</label>
@@ -29,17 +41,7 @@
        >
          🗑️ Supprimer
        </button>
-       
-       <button 
-         v-if="savedResults.length > 0" 
-         @click="generatePDF" 
-         class="btn btn-success"
-         title="Générer le rapport de test PDF"
-         :disabled="generatingPDF"
-       >
-         {{ generatingPDF ? '⏳ Génération...' : '📄 Générer PDF' }}
-       </button>
-    </div>
+     </div>
 
     <!-- Statistiques de validation -->
     <div v-if="validationStats" class="validation-stats">
