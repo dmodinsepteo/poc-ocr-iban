@@ -181,9 +181,10 @@ class PDFGeneratorService {
     
     // Limiter la longueur du texte OCR pour éviter les pages trop longues
     const maxLength = 2000
-    const displayText = ocrText
+    const displayText = ocrText.length > maxLength ? ocrText.substring(0, maxLength) + '...' : ocrText
     
-    this.addText(displayText, 8)
+    // Ajouter un fond gris clair pour tout le texte OCR
+    this.addTextWithBackground(displayText, 8)
     this.currentY += 10
   }
 
@@ -194,13 +195,62 @@ class PDFGeneratorService {
     
     try {
       const jsonString = JSON.stringify(data, null, 2)
-            
-      this.addText(jsonString, 8)
+      
+      // Ajouter un fond gris clair pour tout le JSON
+      this.addTextWithBackground(jsonString, 8)
     } catch (error) {
       this.addText('Erreur lors de la sérialisation JSON', 8)
     }
     
     this.currentY += 10
+  }
+
+  // Nouvelle méthode pour ajouter du texte avec fond
+  addTextWithBackground(text, fontSize = 10) {
+    const padding = 5
+    const maxWidth = this.pageWidth - 2 * this.margin
+    const lineHeight = fontSize / 2 + 2
+    
+    // Diviser le texte en lignes
+    const lines = this.doc.splitTextToSize(text, maxWidth)
+    
+    // Calculer combien de lignes peuvent tenir sur la page actuelle
+    const availableHeight = this.pageHeight - this.currentY - this.margin
+    const linesPerPage = Math.floor(availableHeight / lineHeight)
+    
+    let currentLineIndex = 0
+    let isFirstPage = true
+    
+    while (currentLineIndex < lines.length) {
+      const startY = this.currentY
+      const linesOnThisPage = Math.min(linesPerPage, lines.length - currentLineIndex)
+      const pageHeight = linesOnThisPage * lineHeight + 2 * padding
+      
+      // Dessiner le fond gris clair pour cette page
+      this.doc.setFillColor(248, 249, 250) // Gris très clair
+      this.doc.rect(this.margin - padding, startY - padding, this.pageWidth - 2 * this.margin + 2 * padding, pageHeight, 'F')
+      
+      // Ajouter les lignes de cette page
+      for (let i = 0; i < linesOnThisPage; i++) {
+        if (this.currentY > this.pageHeight - this.margin) {
+          this.doc.addPage()
+          this.currentY = this.margin
+        }
+        this.doc.setFontSize(fontSize)
+        this.doc.setFont('helvetica', 'normal')
+        this.doc.setTextColor(0, 0, 0)
+        this.doc.text(lines[currentLineIndex + i], this.margin, this.currentY)
+        this.currentY += lineHeight
+      }
+      
+      currentLineIndex += linesOnThisPage
+      
+      // Si il reste des lignes, ajouter une nouvelle page
+      if (currentLineIndex < lines.length) {
+        this.doc.addPage()
+        this.currentY = this.margin
+      }
+    }
   }
 
   // Ajouter une page de séparation

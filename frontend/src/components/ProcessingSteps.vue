@@ -62,8 +62,8 @@
             <div class="ocr-header">
               <h4>Texte extrait :</h4>
                           <button @click="copyOCRText" class="btn btn-primary" :title="ocrCopyStatus">
-              {{ ocrCopyStatus === 'Copié !' ? '✅' : '📋' }}
-            </button>
+                {{ ocrCopyStatus === 'Copié !' ? '✅' : '📋' }}
+              </button>
             </div>
             <div class="ocr-container">
               <pre class="ocr-text">{{ ocrText }}</pre>
