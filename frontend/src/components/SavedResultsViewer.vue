@@ -12,13 +12,13 @@
         class="select"
       >
         <option value="">-- Choisir un résultat --</option>
-        <option 
-          v-for="result in savedResults" 
-          :key="result.id" 
-          :value="result.id"
-        >
-          {{ result.fileName }} ({{ formatDate(result.savedAt) }})
-        </option>
+                 <option 
+           v-for="result in savedResults" 
+           :key="result.id" 
+           :value="result.id"
+         >
+           {{ getResultLabel(result) }}
+         </option>
       </select>
       
       <button 
@@ -152,8 +152,9 @@ export default {
     const selectedResultId = ref('')
     const showJson = ref(false)
     const showOCR = ref(false)
-    const metadata = ref([])
-    const validationStats = ref(null)
+         const metadata = ref([])
+     const validationStats = ref(null)
+     const validationStatsCache = ref(new Map()) // Cache pour les statistiques
 
     const selectedResult = computed(() => {
       return savedResults.value.find(result => result.id === selectedResultId.value)
@@ -177,14 +178,37 @@ export default {
       }
     }
 
-    const loadValidationStats = async (resultId) => {
-      try {
-        validationStats.value = await validationService.getValidationStats(resultId)
-      } catch (error) {
-        console.error('Erreur lors du chargement des statistiques:', error)
-        validationStats.value = null
-      }
-    }
+         const loadValidationStats = async (resultId) => {
+       try {
+         const stats = await validationService.getValidationStats(resultId)
+         validationStats.value = stats
+         // Mettre en cache les statistiques
+         validationStatsCache.value.set(resultId, stats)
+       } catch (error) {
+         console.error('Erreur lors du chargement des statistiques:', error)
+         validationStats.value = null
+       }
+     }
+
+     // Charger les statistiques pour tous les résultats
+     const loadAllValidationStats = async () => {
+       try {
+         const statsPromises = savedResults.value.map(async (result) => {
+           try {
+             const stats = await validationService.getValidationStats(result.id)
+             validationStatsCache.value.set(result.id, stats)
+             return { id: result.id, stats }
+           } catch (error) {
+             console.error(`Erreur lors du chargement des stats pour le résultat ${result.id}:`, error)
+             return { id: result.id, stats: null }
+           }
+         })
+         
+         await Promise.all(statsPromises)
+       } catch (error) {
+         console.error('Erreur lors du chargement des statistiques globales:', error)
+       }
+     }
 
     const onResultSelected = async () => {
       showJson.value = false
@@ -199,27 +223,50 @@ export default {
       }
     }
 
-    const onValidationUpdated = async () => {
-      // Recharger les statistiques après une validation
-      if (selectedResultId.value) {
-        await loadValidationStats(selectedResultId.value)
-      }
-    }
+         const onValidationUpdated = async () => {
+       // Recharger les statistiques après une validation
+       if (selectedResultId.value) {
+         await loadValidationStats(selectedResultId.value)
+         // Forcer la mise à jour de l'affichage de la combobox
+         // en déclenchant une réactivité
+         savedResults.value = [...savedResults.value]
+       }
+     }
+
+     // Générer le label pour un résultat avec case à coche
+     const getResultLabel = (result) => {
+       const stats = validationStatsCache.value.get(result.id)
+       const baseLabel = `${result.fileName} (${formatDate(result.savedAt)})`
+       
+       if (!stats) {
+         return baseLabel
+       }
+       
+       // Vérifier si tous les champs sont validés (validés ou invalides, mais pas non validés)
+       const isFullyValidated = stats.unvalidated === 0
+       
+       if (isFullyValidated) {
+         return `✅ ${baseLabel}`
+       } else {
+         return `⏳ ${baseLabel}`
+       }
+     }
 
     const deleteResult = async () => {
       if (!selectedResult.value) return
       
       if (confirm(`Êtes-vous sûr de vouloir supprimer le résultat "${selectedResult.value.fileName}" ?`)) {
-        try {
-          await apiResultsService.deleteResult(selectedResultId.value)
-          await loadSavedResults() // Recharger la liste
-          selectedResultId.value = ''
-          metadata.value = []
-          validationStats.value = null
-        } catch (error) {
-          console.error('Erreur lors de la suppression:', error)
-          alert('Erreur lors de la suppression du résultat')
-        }
+                 try {
+           await apiResultsService.deleteResult(selectedResultId.value)
+           await loadSavedResults() // Recharger la liste
+           await loadAllValidationStats() // Recharger les statistiques
+           selectedResultId.value = ''
+           metadata.value = []
+           validationStats.value = null
+         } catch (error) {
+           console.error('Erreur lors de la suppression:', error)
+           alert('Erreur lors de la suppression du résultat')
+         }
       }
     }
 
@@ -257,9 +304,10 @@ export default {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     }
 
-    onMounted(async () => {
-      await loadSavedResults()
-    })
+         onMounted(async () => {
+       await loadSavedResults()
+       await loadAllValidationStats() // Charger les statistiques pour tous les résultats
+     })
 
     return {
       savedResults,
@@ -270,14 +318,15 @@ export default {
       metadata,
       validationStats,
       onResultSelected,
-      onValidationUpdated,
-      deleteResult,
-      toggleJson,
-      toggleOCR,
-      getDisplayValue,
-      isMultipleValues,
-      formatDate,
-      formatFileSize
+             onValidationUpdated,
+       deleteResult,
+       toggleJson,
+       toggleOCR,
+       getDisplayValue,
+       isMultipleValues,
+       formatDate,
+       formatFileSize,
+       getResultLabel
     }
   }
 }

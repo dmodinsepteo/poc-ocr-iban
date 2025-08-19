@@ -115,6 +115,27 @@
   max-width: 200px;
 }
 
+/* Styles pour la combobox avec cases à coche */
+.select {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 0.9rem;
+}
+
+.select option {
+  padding: 4px 8px;
+  font-size: 0.9rem;
+}
+
+/* Améliorer l'affichage des emojis dans la combobox */
+.select option:contains("✅") {
+  font-weight: 600;
+  color: #28a745;
+}
+
+.select option:contains("⏳") {
+  color: #ffc107;
+}
+
 .json-container {
   padding: 20px;
   border-top: 1px solid #eee;
