@@ -21,14 +21,24 @@
          </option>
       </select>
       
-      <button 
-        v-if="selectedResult" 
-        @click="deleteResult" 
-        class="btn btn-danger"
-        title="Supprimer ce résultat"
-      >
-        🗑️ Supprimer
-      </button>
+             <button 
+         v-if="selectedResult" 
+         @click="deleteResult" 
+         class="btn btn-danger"
+         title="Supprimer ce résultat"
+       >
+         🗑️ Supprimer
+       </button>
+       
+       <button 
+         v-if="savedResults.length > 0" 
+         @click="generatePDF" 
+         class="btn btn-success"
+         title="Générer le rapport de test PDF"
+         :disabled="generatingPDF"
+       >
+         {{ generatingPDF ? '⏳ Génération...' : '📄 Générer PDF' }}
+       </button>
     </div>
 
     <!-- Statistiques de validation -->
@@ -140,6 +150,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import apiResultsService from '../services/apiResultsService.js'
 import validationService from '../services/validationService.js'
+import pdfGeneratorService from '../services/pdfGeneratorService.js'
 import FieldValidator from './FieldValidator.vue'
 
 export default {
@@ -155,6 +166,7 @@ export default {
          const metadata = ref([])
      const validationStats = ref(null)
      const validationStatsCache = ref(new Map()) // Cache pour les statistiques
+     const generatingPDF = ref(false)
 
     const selectedResult = computed(() => {
       return savedResults.value.find(result => result.id === selectedResultId.value)
@@ -296,13 +308,74 @@ export default {
       return new Date(dateString).toLocaleString('fr-FR')
     }
 
-    const formatFileSize = (bytes) => {
-      if (bytes === 0) return '0 Bytes'
-      const k = 1024
-      const sizes = ['Bytes', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-    }
+         const formatFileSize = (bytes) => {
+       if (bytes === 0) return '0 Bytes'
+       const k = 1024
+       const sizes = ['Bytes', 'KB', 'MB', 'GB']
+       const i = Math.floor(Math.log(bytes) / Math.log(k))
+       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+     }
+
+     // Générer le PDF du rapport de test
+     const generatePDF = async () => {
+       if (generatingPDF.value) return
+       
+       generatingPDF.value = true
+       
+       try {
+         console.log('🔄 Début de la génération du PDF...')
+         
+         // Créer les maps pour les métadonnées et statistiques
+         const metadataMap = new Map()
+         const statsMap = new Map()
+         
+         // Charger toutes les métadonnées et statistiques
+         console.log('📊 Chargement des métadonnées et statistiques...')
+         const loadPromises = savedResults.value.map(async (result) => {
+           try {
+             const [metadata, stats] = await Promise.all([
+               apiResultsService.getResultMetadata(result.id),
+               validationService.getValidationStats(result.id)
+             ])
+             
+             metadataMap.set(result.id, metadata)
+             statsMap.set(result.id, stats)
+             
+             console.log(`✅ Chargé: ${result.fileName}`)
+           } catch (error) {
+             console.error(`❌ Erreur pour ${result.fileName}:`, error)
+             metadataMap.set(result.id, [])
+             statsMap.set(result.id, null)
+           }
+         })
+         
+         await Promise.all(loadPromises)
+         
+         console.log('📄 Génération du PDF...')
+         
+         // Générer le PDF
+         const doc = await pdfGeneratorService.generateTestReport(
+           savedResults.value,
+           metadataMap,
+           statsMap
+         )
+         
+         // Télécharger le PDF
+         const filename = `rapport-test-rib-${new Date().toISOString().split('T')[0]}.pdf`
+         pdfGeneratorService.downloadPDF(filename)
+         
+         console.log('✅ PDF généré avec succès!')
+         
+         // Afficher un message de succès
+        //  alert(`PDF généré avec succès!\nFichier: ${filename}`)
+         
+       } catch (error) {
+         console.error('❌ Erreur lors de la génération du PDF:', error)
+         alert('Erreur lors de la génération du PDF. Vérifiez la console pour plus de détails.')
+       } finally {
+         generatingPDF.value = false
+       }
+     }
 
          onMounted(async () => {
        await loadSavedResults()
@@ -326,7 +399,9 @@ export default {
        isMultipleValues,
        formatDate,
        formatFileSize,
-       getResultLabel
+       getResultLabel,
+       generatePDF,
+       generatingPDF
     }
   }
 }
