@@ -143,7 +143,7 @@ app.post('/api/results', async (req, res) => {
           fieldValues: field.field_values ? JSON.stringify(field.field_values) : null,
           validation: {
             create: {
-              isValid: true,
+              isValid: null, // null = non validé par défaut
               expectedValue: null,
               correctedAt: new Date()
             }

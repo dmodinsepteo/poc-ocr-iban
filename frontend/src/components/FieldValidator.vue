@@ -10,13 +10,13 @@
           class="validation-checkbox"
         />
         <span class="validation-label">
-          {{ isValid ? '✅ Valide' : '❌ Invalide' }}
+          {{ isValid === null ? '⏳ Non validé' : isValid === true ? '✅ Valide' : '❌ Invalide' }}
         </span>
       </label>
     </div>
 
     <!-- Zone de correction si invalide -->
-    <div v-if="!isValid" class="correction-section">
+    <div v-if="isValid === false" class="correction-section">
       <div class="correction-header">
         <h5>Valeur attendue :</h5>
       </div>
@@ -82,25 +82,32 @@ export default {
       try {
         if (props.field.validation) {
           currentValidation.value = props.field.validation
-          isValid.value = props.field.validation.isValid
+          isValid.value = props.field.validation.isValid // peut être null, true, ou false
           expectedValue.value = props.field.validation.expectedValue || ''
         } else {
           // Si pas de validation, on utilise les valeurs par défaut
-          isValid.value = true
+          isValid.value = null // non validé par défaut
           expectedValue.value = ''
         }
       } catch (error) {
         console.error('Erreur lors du chargement de la validation:', error)
         // En cas d'erreur, on utilise les valeurs par défaut
-        isValid.value = true
+        isValid.value = null
         expectedValue.value = ''
       }
     }
 
-    // Basculer la validation
+    // Basculer la validation (null -> true -> false -> null)
     const toggleValidation = () => {
-      isValid.value = !isValid.value
-      if (isValid.value) {
+      if (isValid.value === null) {
+        isValid.value = true
+      } else if (isValid.value === true) {
+        isValid.value = false
+      } else {
+        isValid.value = null
+      }
+      
+      if (isValid.value === true) {
         expectedValue.value = ''
       }
       saveValidation()
@@ -116,7 +123,7 @@ export default {
       try {
         await validationService.saveValidation(props.metadataId, {
           isValid: isValid.value,
-          expectedValue: isValid.value ? null : expectedValue.value
+          expectedValue: isValid.value === true ? null : expectedValue.value
         })
         
         saveStatus.value = 'success'
@@ -144,7 +151,7 @@ export default {
 
     // Surveiller les changements de validation
     watch(isValid, (newValue) => {
-      if (newValue) {
+      if (newValue === true) {
         expectedValue.value = ''
       }
     })

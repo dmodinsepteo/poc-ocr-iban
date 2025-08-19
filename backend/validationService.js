@@ -113,14 +113,6 @@ class ValidationService {
         }
       });
       
-      const validatedFields = await prisma.fieldValidation.count({
-        where: {
-          metadata: {
-            resultId: resultId
-          }
-        }
-      });
-      
       const validFields = await prisma.fieldValidation.count({
         where: {
           metadata: {
@@ -139,12 +131,20 @@ class ValidationService {
         }
       });
       
+      const unvalidatedFields = await prisma.fieldValidation.count({
+        where: {
+          metadata: {
+            resultId: resultId
+          },
+          isValid: null
+        }
+      });
+      
       return {
         total: totalFields,
-        validated: validatedFields,
         valid: validFields,
         invalid: invalidFields,
-        unvalidated: totalFields - validatedFields
+        unvalidated: unvalidatedFields
       };
     } catch (error) {
       console.error('Erreur lors de la récupération des statistiques:', error);

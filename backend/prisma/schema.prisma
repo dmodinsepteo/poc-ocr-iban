@@ -39,7 +39,7 @@ model FileMetadata {
 model FieldValidation {
   id            Int          @id @default(autoincrement())
   metadataId    Int          @unique
-  isValid       Boolean      @default(true)
+  isValid       Boolean? // null = non validé, true = validé, false = invalide
   expectedValue String?
   correctedAt   DateTime     @default(now())
   metadata      FileMetadata @relation(fields: [metadataId], references: [id], onDelete: Cascade)

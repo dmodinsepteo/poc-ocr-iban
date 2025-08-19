@@ -40,7 +40,7 @@
         </div>
         <div class="stat-item">
           <span class="stat-number valid">{{ validationStats.valid }}</span>
-          <span class="stat-label">Valides</span>
+          <span class="stat-label">Validés</span>
         </div>
         <div class="stat-item">
           <span class="stat-number invalid">{{ validationStats.invalid }}</span>
