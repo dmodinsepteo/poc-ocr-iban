@@ -30,6 +30,12 @@
           >
             📋 Consultation
           </button>
+          <button 
+            @click="() => { activeTab = 'pdf'; saveActiveTab('pdf'); }" 
+            :class="['tab-btn', { active: activeTab === 'pdf' }]"
+          >
+            📄 Génération PDF
+          </button>
         </div>
 
         <!-- Contenu des onglets -->
@@ -56,6 +62,11 @@
           <SavedResultsViewer />
         </div>
 
+        <div v-else-if="activeTab === 'pdf'" class="tab-content">
+          <!-- Génération PDF -->
+          <PDFGenerator />
+        </div>
+
         <!-- Section d'erreur -->
         <section v-if="error" class="error-section">
           <div class="error-message">
@@ -74,6 +85,7 @@ import AuthManager from './components/AuthManager.vue'
 import ProcessingSteps from './components/ProcessingSteps.vue'
 import ResultsDisplay from './components/ResultsDisplay.vue'
 import SavedResultsViewer from './components/SavedResultsViewer.vue'
+import PDFGenerator from './components/PDFGenerator.vue'
 import authService from './services/authService.js'
 import resultsService from './services/resultsService.js'
 import './styles/main.css'
@@ -84,7 +96,8 @@ export default {
     AuthManager,
     ProcessingSteps,
     ResultsDisplay,
-    SavedResultsViewer
+    SavedResultsViewer,
+    PDFGenerator
   },
   setup() {
     const selectedFile = ref(null)
@@ -102,7 +115,7 @@ export default {
     // Fonction pour charger l'onglet actif depuis le localStorage
     const loadActiveTab = () => {
       const savedTab = localStorage.getItem('activeTab')
-      if (savedTab && ['extraction', 'consultation'].includes(savedTab)) {
+      if (savedTab && ['extraction', 'consultation', 'pdf'].includes(savedTab)) {
         activeTab.value = savedTab
       }
     }
