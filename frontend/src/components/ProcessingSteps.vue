@@ -15,18 +15,21 @@
           </span>
         </div>
         <div class="step-content">
-          <div v-if="selectedFile" class="file-display">
-            <div class="file-header">
-              <h4>Fichier sélectionné :</h4>
-            </div>
-            <div class="file-container">
-              <div class="file-info">
-                <span class="file-icon">📄</span>
-                <span class="file-name">{{ selectedFile.name }}</span>
-                <span class="file-size">({{ formatFileSize(selectedFile.size) }})</span>
-              </div>
-            </div>
-          </div>
+                     <div v-if="selectedFile" class="file-display">
+             <div class="file-header">
+               <h4>Fichier sélectionné :</h4>
+               <button @click="changeFile" class="btn btn-secondary btn-sm" title="Changer de fichier">
+                 🔄 Changer
+               </button>
+             </div>
+             <div class="file-container">
+               <div class="file-info">
+                 <span class="file-icon">📄</span>
+                 <span class="file-name">{{ selectedFile.name }}</span>
+                 <span class="file-size">({{ formatFileSize(selectedFile.size) }})</span>
+               </div>
+             </div>
+           </div>
           <div v-else class="no-file">
             <p>Aucun fichier sélectionné</p>
             <button @click="selectFile" :disabled="!isTokenValid" class="btn btn-primary btn-lg">
@@ -353,6 +356,16 @@ export default {
       input.click()
     }
 
+    const changeFile = () => {
+      // Réinitialiser les étapes 2 et 3
+      ocrText.value = ''
+      extractedData.value = null
+      clearRetryMessages()
+      
+      // Sélectionner un nouveau fichier
+      selectFile()
+    }
+
     const saveResult = async () => {
       if (!extractedData.value || !props.selectedFile) return
       
@@ -406,6 +419,7 @@ export default {
       copyOCRText,
       formatFileSize,
       selectFile,
+      changeFile,
       saveResult
     }
   }
