@@ -133,7 +133,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import ocrService from '../services/ocrService.js'
 import authService from '../services/authService.js'
 import resultsService from '../services/resultsService.js'
@@ -176,6 +176,12 @@ export default {
 
     const isTokenValid = computed(() => authService.token.value !== null && authService.tokenExpiry.value && Date.now() < authService.tokenExpiry.value)
 
+    // Variables pour stocker les fonctions console originales
+    let originalConsoleWarn = null
+    let originalConsoleLog = null
+    let originalConsoleError = null
+    let isConsoleIntercepted = false
+
     // Fonction pour ajouter un message de retry
     const addRetryMessage = (type, text, icon) => {
       const message = { type, text, icon, timestamp: Date.now() }
@@ -195,6 +201,52 @@ export default {
       retryMessages.value = []
     }
 
+    // Fonction pour intercepter les messages console
+    const interceptConsole = () => {
+      if (isConsoleIntercepted) return // Éviter les doublons
+      
+      originalConsoleWarn = console.warn
+      originalConsoleLog = console.log
+      originalConsoleError = console.error
+      
+      console.warn = (message) => {
+        if (message.includes('Tentative') && message.includes('échouée')) {
+          addRetryMessage('warning', message, '⚠️')
+        }
+        originalConsoleWarn(message)
+      }
+      
+      console.log = (message) => {
+        if (message.includes('Attente de') && message.includes('avant la prochaine tentative')) {
+          addRetryMessage('info', message, '⏳')
+        }
+        originalConsoleLog(message)
+      }
+      
+      console.error = (message) => {
+        if (message.includes('Échec après') || message.includes('Erreur non retryable')) {
+          addRetryMessage('error', message, '❌')
+        }
+        originalConsoleError(message)
+      }
+      
+      isConsoleIntercepted = true
+    }
+
+    // Fonction pour restaurer les fonctions console
+    const restoreConsole = () => {
+      if (!isConsoleIntercepted) return
+      
+      if (originalConsoleWarn) console.warn = originalConsoleWarn
+      if (originalConsoleLog) console.log = originalConsoleLog
+      if (originalConsoleError) console.error = originalConsoleError
+      
+      isConsoleIntercepted = false
+      originalConsoleWarn = null
+      originalConsoleLog = null
+      originalConsoleError = null
+    }
+
     const getStatusText = (status) => {
       switch (status) {
         case 'pending': return 'En attente'
@@ -211,43 +263,14 @@ export default {
       clearRetryMessages()
       
       try {
-        // Intercepter les messages de retry depuis la console
-        const originalWarn = console.warn
-        const originalLog = console.log
-        const originalError = console.error
-        
-        console.warn = (message) => {
-          if (message.includes('Tentative') && message.includes('échouée')) {
-            addRetryMessage('warning', message, '⚠️')
-          }
-          originalWarn(message)
-        }
-        
-        console.log = (message) => {
-          if (message.includes('Attente de') && message.includes('avant la prochaine tentative')) {
-            addRetryMessage('info', message, '⏳')
-          }
-          originalLog(message)
-        }
-        
-        console.error = (message) => {
-          if (message.includes('Échec après') || message.includes('Erreur non retryable')) {
-            addRetryMessage('error', message, '❌')
-          }
-          originalError(message)
-        }
-        
+        interceptConsole()
         ocrText.value = await ocrService.performOCR(props.selectedFile)
         emit('ocr-completed', ocrText.value)
-        
-        // Restaurer les fonctions console
-        console.warn = originalWarn
-        console.log = originalLog
-        console.error = originalError
       } catch (error) {
         console.error('Erreur OCR:', error)
         addRetryMessage('error', `Erreur finale: ${error.message}`, '❌')
       } finally {
+        restoreConsole()
         isOcring.value = false
       }
     }
@@ -259,44 +282,15 @@ export default {
       clearRetryMessages()
       
       try {
-        // Intercepter les messages de retry depuis la console
-        const originalWarn = console.warn
-        const originalLog = console.log
-        const originalError = console.error
-        
-        console.warn = (message) => {
-          if (message.includes('Tentative') && message.includes('échouée')) {
-            addRetryMessage('warning', message, '⚠️')
-          }
-          originalWarn(message)
-        }
-        
-        console.log = (message) => {
-          if (message.includes('Attente de') && message.includes('avant la prochaine tentative')) {
-            addRetryMessage('info', message, '⏳')
-          }
-          originalLog(message)
-        }
-        
-        console.error = (message) => {
-          if (message.includes('Échec après') || message.includes('Erreur non retryable')) {
-            addRetryMessage('error', message, '❌')
-          }
-          originalError(message)
-        }
-        
+        interceptConsole()
         const data = await ocrService.extractData(ocrText.value)
         extractedData.value = data
         emit('extraction-completed', data)
-        
-        // Restaurer les fonctions console
-        console.warn = originalWarn
-        console.log = originalLog
-        console.error = originalError
       } catch (error) {
         console.error('Erreur extraction:', error)
         addRetryMessage('error', `Erreur finale: ${error.message}`, '❌')
       } finally {
+        restoreConsole()
         isExtracting.value = false
       }
     }
@@ -308,45 +302,16 @@ export default {
       clearRetryMessages()
       
       try {
-        // Intercepter les messages de retry depuis la console
-        const originalWarn = console.warn
-        const originalLog = console.log
-        const originalError = console.error
-        
-        console.warn = (message) => {
-          if (message.includes('Tentative') && message.includes('échouée')) {
-            addRetryMessage('warning', message, '⚠️')
-          }
-          originalWarn(message)
-        }
-        
-        console.log = (message) => {
-          if (message.includes('Attente de') && message.includes('avant la prochaine tentative')) {
-            addRetryMessage('info', message, '⏳')
-          }
-          originalLog(message)
-        }
-        
-        console.error = (message) => {
-          if (message.includes('Échec après') || message.includes('Erreur non retryable')) {
-            addRetryMessage('error', message, '❌')
-          }
-          originalError(message)
-        }
-        
+        interceptConsole()
         const result = await ocrService.processFile(props.selectedFile)
         ocrText.value = result.ocrText
         extractedData.value = result.extractedData
         emit('processing-completed', result)
-        
-        // Restaurer les fonctions console
-        console.warn = originalWarn
-        console.log = originalLog
-        console.error = originalError
       } catch (error) {
         console.error('Erreur traitement complet:', error)
         addRetryMessage('error', `Erreur finale: ${error.message}`, '❌')
       } finally {
+        restoreConsole()
         isProcessing.value = false
       }
     }
@@ -415,6 +380,11 @@ export default {
         }, 3000)
       }
     }
+
+    // Nettoyer les fonctions console quand le composant est démonté
+    onUnmounted(() => {
+      restoreConsole()
+    })
 
     return {
       ocrText,
