@@ -35,11 +35,11 @@ npm run dev
 git clone <votre-repo>
 cd rib-ocr-project
 
-# Vérifier l'environnement Docker
-./docker-check.sh
-
 # Démarrer avec Docker
-./docker-start.sh
+docker-compose up -d
+
+# Voir les logs
+docker-compose logs -f
 ```
 
 > **💡 Avantage Docker** : Environnement isolé, pas d'installation de dépendances locales, déploiement simplifié.
@@ -55,17 +55,11 @@ npm run dev:frontend     # Démarre uniquement le frontend
 
 ### **Docker**
 ```bash
-./docker-check.sh        # Vérifier l'environnement Docker
-./docker-sync.sh         # Synchroniser les fichiers package-lock.json
-./docker-start.sh        # Démarrer l'application avec Docker
-./docker-stop.sh         # Arrêter l'application Docker
-./docker-test.sh         # Tester le bon fonctionnement
-./docker-rebuild-backend.sh  # Reconstruire le backend (OpenSSL)
-./docker-switch-backend.sh   # Basculer Alpine/Debian
-./docker-fix-nodemon.sh      # Corriger le problème nodemon
 docker-compose up -d     # Démarrer en arrière-plan
 docker-compose down      # Arrêter les conteneurs
 docker-compose logs -f   # Voir les logs en temps réel
+docker-compose build     # Reconstruire les images
+docker-compose restart   # Redémarrer les services
 ```
 
 ### **Base de Données**
@@ -102,15 +96,6 @@ rib-ocr-project/
 │   └── package.json
 │
 ├── docker-compose.yml     # Configuration Docker Compose
-├── docker-start.sh        # Script de démarrage Docker
-├── docker-stop.sh         # Script d'arrêt Docker
-├── docker-check.sh        # Script de vérification Docker
-├── docker-sync.sh         # Script de synchronisation package-lock.json
-├── docker-test.sh         # Script de test des conteneurs
-├── docker-rebuild-backend.sh  # Script de reconstruction backend (OpenSSL)
-├── docker-switch-backend.sh   # Script de basculement Alpine/Debian
-├── docker-fix-nodemon.sh      # Script de correction nodemon
-├── DOCKER.md              # Documentation Docker complète
 ├── package.json           # Scripts principaux
 └── README.md
 ```
@@ -133,29 +118,7 @@ PORT=3001
 
 ### **Installation Docker**
 
-#### **Configuration Docker**
-```bash
-# Copier le fichier d'exemple
-cp docker.env.example .env
-
-# Modifier les variables selon vos besoins
-nano .env
-```
-
-#### **Variables d'Environnement Docker**
-```env
-# Backend
-NODE_ENV=development
-DATABASE_URL=file:./data/dev.db
-PORT=3001
-
-# Frontend
-VITE_API_URL=http://localhost:3001
-
-# Docker
-FRONTEND_PORT=3000
-BACKEND_PORT=3001
-```
+Aucune configuration supplémentaire requise. Les variables d'environnement sont définies dans `docker-compose.yml`.
 
 ## 🌐 Accès aux Applications
 
@@ -172,7 +135,7 @@ BACKEND_PORT=3001
 ## 📚 Documentation
 
 - **Guide principal** : Ce README
-- **Guide Docker complet** : [DOCKER.md](./DOCKER.md)
+- **Docker rapide** : [DOCKER-QUICKSTART.md](./DOCKER-QUICKSTART.md)
 - **Architecture** : [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## 🔌 API Endpoints
@@ -187,6 +150,11 @@ BACKEND_PORT=3001
 - `GET /api/results/search?q=query` - Recherche dans les résultats
 - `GET /api/results/count` - Compte les résultats
 - `GET /api/health` - Vérification de l'état du serveur
+
+### **Validation**
+- `POST /api/validations` - Sauvegarder une validation
+- `GET /api/validations/result/:resultId` - Récupérer les validations d'un résultat
+- `GET /api/validations/stats/:resultId` - Statistiques de validation
 
 ## 🛠️ Développement
 
@@ -223,6 +191,7 @@ npm run dev
 ### **Schéma Prisma**
 - **ExtractionResult** : Résultats d'extraction principaux
 - **FileMetadata** : Métadonnées détaillées des champs
+- **FieldValidation** : Validations des champs extraits
 
 ### **Commandes Utiles**
 ```bash
@@ -250,6 +219,59 @@ npm run dev
 # Frontend
 cd frontend
 npm run dev
+
+# Docker
+docker-compose logs -f
+```
+
+## 🐛 Dépannage Docker
+
+### **Problèmes courants**
+
+#### **1. Ports déjà utilisés**
+```bash
+# Vérifier les ports utilisés
+netstat -tulpn | grep :3000
+netstat -tulpn | grep :3001
+
+# Arrêter les processus utilisant les ports
+sudo lsof -ti:3000 | xargs kill -9
+sudo lsof -ti:3001 | xargs kill -9
+```
+
+#### **2. Problèmes de build**
+```bash
+# Nettoyer complètement
+docker-compose down --rmi all --volumes --remove-orphans
+docker system prune -f
+
+# Reconstruire
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+#### **3. Base de données corrompue**
+```bash
+# Supprimer le volume de la base de données
+docker-compose down -v
+docker volume rm rib-ocr-project_backend_data
+
+# Redémarrer pour recréer la base
+docker-compose up -d
+```
+
+#### **4. Erreur "nodemon: not found"**
+```bash
+# Reconstruire le backend
+docker-compose build --no-cache backend
+docker-compose up -d backend
+```
+
+#### **5. Erreur Prisma OpenSSL**
+```bash
+# Reconstruire le backend
+docker-compose build --no-cache backend
+docker-compose up -d backend
 ```
 
 ## 🚀 Production
@@ -263,12 +285,20 @@ npm run build
 npm run start
 ```
 
+### **Docker Production**
+```bash
+# Modifier docker-compose.yml pour la production
+# Changer NODE_ENV=production
+docker-compose up -d
+```
+
 ## 📝 Notes
 
 - Le backend doit être démarré avant le frontend
 - La base de données SQLite est créée automatiquement dans `backend/dev.db`
 - Les migrations Prisma sont appliquées automatiquement au démarrage
 - Utilisez `npm run dev` pour démarrer les deux services simultanément
+- En Docker, les volumes sont persistants pour la base de données
 
 ## 🤝 Contribution
 
