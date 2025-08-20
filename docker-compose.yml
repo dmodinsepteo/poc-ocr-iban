@@ -5,27 +5,48 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: rib-ocr-backend
     ports:
       - "3001:3001"
     environment:
-      - DATABASE_URL=file:./dev.db
+      - NODE_ENV=development
+      - DATABASE_URL=file:./data/dev.db
       - PORT=3001
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - backend_data:/app/data
     working_dir: /app
-    command: npm run dev
+    command: sh -c "npx prisma migrate deploy && npm run dev"
+    restart: unless-stopped
+    networks:
+      - rib-ocr-network
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: rib-ocr-frontend
     ports:
-      - "3000:3000"
+      - "3010:3000"
+    environment:
+      - NODE_ENV=development
+      - DOCKER=true
     volumes:
       - ./frontend:/app
       - /app/node_modules
     working_dir: /app
-    command: npm run dev
+    command: npm run dev:docker
     depends_on:
-      - backend 
+      - backend
+    restart: unless-stopped
+    networks:
+      - rib-ocr-network
+
+volumes:
+  backend_data:
+    driver: local
+
+networks:
+  rib-ocr-network:
+    driver: bridge 

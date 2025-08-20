@@ -1,0 +1,35 @@
+# Dockerfile alternatif pour le backend Node.js (basé sur Debian)
+FROM node:18-slim
+
+# Installer les dépendances système nécessaires
+RUN apt-get update && apt-get install -y \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Copier les fichiers de dépendances
+COPY package*.json ./
+
+# Installer les dépendances (inclure les devDependencies pour nodemon)
+RUN npm install
+
+# Copier le code source
+COPY . .
+
+# Installer Prisma CLI
+RUN npm install -g prisma
+
+# Générer le client Prisma
+RUN npx prisma generate
+
+# Créer le répertoire pour la base de données
+RUN mkdir -p /app/data
+
+# Exposer le port
+EXPOSE 3001
+
+# Commande par défaut
+CMD ["npm", "start"]

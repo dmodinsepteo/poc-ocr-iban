@@ -16,7 +16,7 @@ Application complète pour l'extraction de coordonnées bancaires depuis des fic
 
 ## 🚀 Installation Rapide
 
-### **1. Installation Complète**
+### **Option 1 : Installation Classique**
 ```bash
 # Cloner le projet
 git clone <votre-repo>
@@ -24,21 +24,48 @@ cd rib-ocr-project
 
 # Installation et configuration automatique
 npm run setup
-```
 
-### **2. Démarrage en Mode Développement**
-```bash
-# Démarrer backend ET frontend simultanément
+# Démarrage en mode développement
 npm run dev
 ```
 
+### **Option 2 : Installation avec Docker (Recommandé)**
+```bash
+# Cloner le projet
+git clone <votre-repo>
+cd rib-ocr-project
+
+# Vérifier l'environnement Docker
+./docker-check.sh
+
+# Démarrer avec Docker
+./docker-start.sh
+```
+
+> **💡 Avantage Docker** : Environnement isolé, pas d'installation de dépendances locales, déploiement simplifié.
+
 ## 📋 Scripts Disponibles
 
-### **Développement**
+### **Développement (Installation Classique)**
 ```bash
 npm run dev              # Démarre backend + frontend
 npm run dev:backend      # Démarre uniquement le backend
 npm run dev:frontend     # Démarre uniquement le frontend
+```
+
+### **Docker**
+```bash
+./docker-check.sh        # Vérifier l'environnement Docker
+./docker-sync.sh         # Synchroniser les fichiers package-lock.json
+./docker-start.sh        # Démarrer l'application avec Docker
+./docker-stop.sh         # Arrêter l'application Docker
+./docker-test.sh         # Tester le bon fonctionnement
+./docker-rebuild-backend.sh  # Reconstruire le backend (OpenSSL)
+./docker-switch-backend.sh   # Basculer Alpine/Debian
+./docker-fix-nodemon.sh      # Corriger le problème nodemon
+docker-compose up -d     # Démarrer en arrière-plan
+docker-compose down      # Arrêter les conteneurs
+docker-compose logs -f   # Voir les logs en temps réel
 ```
 
 ### **Base de Données**
@@ -64,21 +91,35 @@ rib-ocr-project/
 │   │   ├── components/    # Composants Vue
 │   │   ├── services/      # Services API
 │   │   └── ...
+│   ├── Dockerfile         # Image Docker frontend
 │   └── package.json
 │
 ├── backend/               # API Express + Prisma
 │   ├── prisma/
 │   │   └── schema.prisma  # Schéma de base de données
 │   ├── server.js          # Serveur Express
+│   ├── Dockerfile         # Image Docker backend
 │   └── package.json
 │
+├── docker-compose.yml     # Configuration Docker Compose
+├── docker-start.sh        # Script de démarrage Docker
+├── docker-stop.sh         # Script d'arrêt Docker
+├── docker-check.sh        # Script de vérification Docker
+├── docker-sync.sh         # Script de synchronisation package-lock.json
+├── docker-test.sh         # Script de test des conteneurs
+├── docker-rebuild-backend.sh  # Script de reconstruction backend (OpenSSL)
+├── docker-switch-backend.sh   # Script de basculement Alpine/Debian
+├── docker-fix-nodemon.sh      # Script de correction nodemon
+├── DOCKER.md              # Documentation Docker complète
 ├── package.json           # Scripts principaux
 └── README.md
 ```
 
 ## 🔧 Configuration
 
-### **Variables d'Environnement Backend**
+### **Installation Classique**
+
+#### **Variables d'Environnement Backend**
 ```bash
 cd backend
 cp env.example .env
@@ -90,11 +131,49 @@ DATABASE_URL="file:./dev.db"
 PORT=3001
 ```
 
+### **Installation Docker**
+
+#### **Configuration Docker**
+```bash
+# Copier le fichier d'exemple
+cp docker.env.example .env
+
+# Modifier les variables selon vos besoins
+nano .env
+```
+
+#### **Variables d'Environnement Docker**
+```env
+# Backend
+NODE_ENV=development
+DATABASE_URL=file:./data/dev.db
+PORT=3001
+
+# Frontend
+VITE_API_URL=http://localhost:3001
+
+# Docker
+FRONTEND_PORT=3000
+BACKEND_PORT=3001
+```
+
 ## 🌐 Accès aux Applications
 
+### **Installation Classique**
 - **Frontend** : http://localhost:3000
 - **Backend API** : http://localhost:3001/api
 - **Prisma Studio** : http://localhost:5555 (après `npm run db:studio`)
+
+### **Installation Docker**
+- **Frontend** : http://localhost:3000
+- **Backend API** : http://localhost:3001/api
+- **Logs en temps réel** : `docker-compose logs -f`
+
+## 📚 Documentation
+
+- **Guide principal** : Ce README
+- **Guide Docker complet** : [DOCKER.md](./DOCKER.md)
+- **Architecture** : [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## 🔌 API Endpoints
 

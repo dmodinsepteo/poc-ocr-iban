@@ -3,7 +3,7 @@ import authService from './authService.js'
 
 class OCRService {
   constructor() {
-    this.apiUrl = '/api' // Utilise le proxy local
+    this.apiUrl = '/brain-api' // Utilise le proxy local
     this.maxRetries = 3
     this.retryDelay = 2000 // 2 secondes entre les tentatives
   }

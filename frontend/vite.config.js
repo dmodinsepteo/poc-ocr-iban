@@ -5,7 +5,8 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 3000,
-    open: true,
+    open: process.env.NODE_ENV === 'development' && !process.env.DOCKER, // Ouvrir seulement en dev local
+    host: '0.0.0.0', // Permet l'accès depuis l'extérieur du conteneur
     proxy: {
       '/auth-api': {
         target: 'https://auth-api.softlaw.ai',
@@ -13,10 +14,14 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/auth-api/, ''),
         secure: true
       },
-      '/api': {
+      '/brain-api': {
         target: 'https://notaryllm-dev.softlaw.ai',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        rewrite: (path) => {
+          console.log('path', path)
+          console.log('path.replace', path.replace(/^\/brain-api/, ''))
+          return path.replace(/^\/brain-api/, '')
+        },
         secure: true
       }
     }
