@@ -71,7 +71,7 @@
           <thead>
             <tr>
               <th>Nom du champ</th>
-              <th>Type</th>
+              <!-- <th>Type</th> -->
               <th>Valeur</th>
               <th>Validation</th>
               <th>Texte d'extraction</th>
@@ -80,7 +80,7 @@
           <tbody>
             <tr v-for="field in metadata" :key="field.id">
               <td>{{ field.fieldName }}</td>
-              <td>{{ field.fieldType }}</td>
+              <!-- <td>{{ field.fieldType }}</td> -->
               <td>
                 <div v-if="getDisplayValue(field)" class="value-display">
                   <span v-if="isMultipleValues(field)" class="multiple-values">
