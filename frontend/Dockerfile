@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 3000
 
 # Commande par défaut pour le développement
-CMD ["npm", "run", "dev:docker"]
+CMD ["npm", "run", "start"]
