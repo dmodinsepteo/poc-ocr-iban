@@ -1,5 +1,5 @@
-# Dockerfile pour le frontend Vue.js
-FROM node:18-alpine
+# Dockerfile pour le frontend Vue.js en production
+FROM node:20-alpine AS builder
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -7,14 +7,26 @@ WORKDIR /app
 # Copier les fichiers de dépendances
 COPY package*.json ./
 
-# Installer les dépendances (npm install au lieu de npm ci pour éviter les problèmes de sync)
-RUN npm install
+# Installer les dépendances
+RUN npm ci --only=production
 
 # Copier le code source
 COPY . .
 
-# Exposer le port
-EXPOSE 3000
+# Build de l'application
+RUN npm run build
 
-# Commande par défaut pour le développement
-CMD ["npm", "run", "start"]
+# Stage de production avec nginx
+FROM nginx:alpine AS production
+
+# Copier les fichiers buildés depuis le stage builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copier la configuration nginx personnalisée
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Exposer le port 80
+EXPOSE 80
+
+# Commande par défaut
+CMD ["nginx", "-g", "daemon off;"]

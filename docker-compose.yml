@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  # Frontend en production avec Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: rib-ocr-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - rib-ocr-network
+
+  # Backend avec Node.js
   backend:
     build:
       context: ./backend
@@ -9,44 +25,19 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=file:./data/dev.db
+      - NODE_ENV=production
+      - DATABASE_URL=file:./data/prod.db
       - PORT=3001
     volumes:
-      - ./backend:/app
-      - /app/node_modules
       - backend_data:/app/data
-    working_dir: /app
-    command: sh -c "npx prisma migrate deploy && npm run start"
     restart: unless-stopped
     networks:
       - rib-ocr-network
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: rib-ocr-frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - DOCKER=true
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    working_dir: /app
-    command: npm run start
-    depends_on:
-      - backend
-    restart: unless-stopped
-    networks:
-      - rib-ocr-network
+networks:
+  rib-ocr-network:
+    driver: bridge
 
 volumes:
   backend_data:
     driver: local
-
-networks:
-  rib-ocr-network:
-    driver: bridge 

@@ -35,11 +35,15 @@ npm run dev
 git clone <votre-repo>
 cd rib-ocr-project
 
-# Démarrer avec Docker
+# Démarrer l'application complète
 docker-compose up -d
 
 # Voir les logs
 docker-compose logs -f
+
+# Voir les logs d'un service spécifique
+docker-compose logs -f frontend
+docker-compose logs -f backend
 ```
 
 > **💡 Avantage Docker** : Environnement isolé, pas d'installation de dépendances locales, déploiement simplifié.
@@ -55,11 +59,27 @@ npm run dev:frontend     # Démarre uniquement le frontend
 
 ### **Docker**
 ```bash
-docker-compose up -d     # Démarrer en arrière-plan
-docker-compose down      # Arrêter les conteneurs
-docker-compose logs -f   # Voir les logs en temps réel
-docker-compose build     # Reconstruire les images
-docker-compose restart   # Redémarrer les services
+# Démarrer l'application complète
+docker-compose up -d
+
+# Arrêter les conteneurs
+docker-compose down
+
+# Voir les logs en temps réel
+docker-compose logs -f
+
+# Voir les logs d'un service spécifique
+docker-compose logs -f frontend
+docker-compose logs -f backend
+
+# Reconstruire les images
+docker-compose build --no-cache
+
+# Redémarrer les services
+docker-compose restart
+
+# Nettoyer complètement
+docker-compose down -v --rmi all
 ```
 
 ### **Base de Données**
@@ -85,17 +105,20 @@ rib-ocr-project/
 │   │   ├── components/    # Composants Vue
 │   │   ├── services/      # Services API
 │   │   └── ...
-│   ├── Dockerfile         # Image Docker frontend
+│   ├── Dockerfile         # Image Docker frontend (production)
+│   ├── nginx.conf         # Configuration nginx
+│   ├── .dockerignore      # Fichiers ignorés pour Docker
 │   └── package.json
 │
 ├── backend/               # API Express + Prisma
 │   ├── prisma/
 │   │   └── schema.prisma  # Schéma de base de données
 │   ├── server.js          # Serveur Express
-│   ├── Dockerfile         # Image Docker backend
+│   ├── Dockerfile         # Image Docker backend (production)
+│   ├── .dockerignore      # Fichiers ignorés pour Docker
 │   └── package.json
 │
-├── docker-compose.yml     # Configuration Docker Compose
+├── docker-compose.yml     # Configuration Docker Compose unifiée
 ├── package.json           # Scripts principaux
 └── README.md
 ```
@@ -120,6 +143,11 @@ PORT=3001
 
 Aucune configuration supplémentaire requise. Les variables d'environnement sont définies dans `docker-compose.yml`.
 
+**Architecture Docker :**
+- **Frontend** : Vue.js buildé + Nginx (port 3000)
+- **Backend** : Node.js + Express + Prisma (port 3001)
+- **Base de données** : SQLite persistante dans un volume Docker
+
 ## 🌐 Accès aux Applications
 
 ### **Installation Classique**
@@ -135,7 +163,6 @@ Aucune configuration supplémentaire requise. Les variables d'environnement sont
 ## 📚 Documentation
 
 - **Guide principal** : Ce README
-- **Docker rapide** : [DOCKER-QUICKSTART.md](./DOCKER-QUICKSTART.md)
 - **Architecture** : [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## 🔌 API Endpoints
