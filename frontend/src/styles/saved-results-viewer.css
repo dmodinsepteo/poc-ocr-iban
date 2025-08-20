@@ -62,15 +62,15 @@
 }
 
 .stat-number.valid {
-  color: #64e4dd;
+  color: #28a745;
 }
 
 .stat-number.invalid {
-  color: #ff614c;
+  color: #dc3545;
 }
 
 .stat-number.unvalidated {
-  color: #ff96de;
+  color: #ffc107;
 }
 
 .stat-label {
