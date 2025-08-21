@@ -322,15 +322,15 @@ export default {
       metadata,
       validationStats,
       onResultSelected,
-             onValidationUpdated,
-       deleteResult,
-       toggleJson,
-       toggleOCR,
-       getDisplayValue,
-       isMultipleValues,
-       formatDate,
-       formatFileSize,
-       getResultLabel
+      onValidationUpdated,
+      deleteResult,
+      toggleJson,
+      toggleOCR,
+      getDisplayValue,
+      isMultipleValues,
+      formatDate,
+      formatFileSize,
+      getResultLabel
     }
   }
 }

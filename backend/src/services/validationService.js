@@ -14,15 +14,15 @@ export async function getValidationStats(resultId) {
   const validations = await validationRepository.findValidationsByResultId(resultId);
 
   const total = validations.length;
-  const validated = validations.filter(v => v.isValid === true).length;
+  const valid = validations.filter(v => v.isValid === true).length;
   const invalid = validations.filter(v => v.isValid === false).length;
   const unvalidated = validations.filter(v => v.isValid === null).length;
 
   return {
     total,
-    validated,
+    valid,
     invalid,
     unvalidated,
-    progress: total > 0 ? Math.round((validated + invalid) / total * 100) : 0
+    progress: total > 0 ? Math.round((valid + invalid) / total * 100) : 0
   };
 }

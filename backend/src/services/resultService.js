@@ -3,7 +3,18 @@ import { ResultRepository } from '../repositories/resultRepository.js';
 const resultRepository = new ResultRepository();
 
 export async function getAllResults() {
-  return await resultRepository.findAll();
+  const results = await resultRepository.findAll();
+
+  const formattedResults = results.map(result => ({
+    id: result.id,
+    fileName: result.fileName,
+    fileSize: result.fileSize,
+    savedAt: result.savedAt.toISOString(),
+    ocrText: result.ocrText,
+    data: JSON.parse(result.extractedData)
+  }));
+  
+  return formattedResults;
 }
 
 export async function getResultById(id) {
