@@ -6,6 +6,7 @@ const router = express.Router();
 // Routes pour les résultats
 router.get("/", resultController.getAll);
 router.get("/:id", resultController.getOne);
+router.get("/:id/metadata", resultController.getMetadata);
 router.post("/", resultController.create);
 router.delete("/:id", resultController.remove);
 router.get("/search", resultController.search);

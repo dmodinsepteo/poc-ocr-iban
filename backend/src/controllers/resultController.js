@@ -21,6 +21,15 @@ export async function getOne(req, res) {
   }
 }
 
+export async function getMetadata(req, res) {
+  try {
+    const metadata = await resultService.getResultMetadata(req.params.id);
+    res.json(metadata);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 export async function create(req, res) {
   try {
     const result = await resultService.createResult(req.body);

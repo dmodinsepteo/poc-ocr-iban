@@ -102,6 +102,20 @@ export class ResultRepository {
     });
   }
 
+  async findMetadataByResultId(resultId) {
+    return await prisma.fileMetadata.findMany({
+      where: {
+        resultId: parseInt(resultId)
+      },
+      include: {
+        validation: true
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    });
+  }
+
   async count() {
     return await prisma.extractionResult.count();
   }
