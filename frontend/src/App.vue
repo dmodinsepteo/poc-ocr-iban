@@ -36,6 +36,12 @@
           >
             📄 Génération PDF
           </button>
+          <button 
+            @click="() => { activeTab = 'comparison'; saveActiveTab('comparison'); }" 
+            :class="['tab-btn', { active: activeTab === 'comparison' }]"
+          >
+            🔄 Comparaison
+          </button>
         </div>
 
         <!-- Contenu des onglets -->
@@ -67,6 +73,11 @@
           <PDFGenerator />
         </div>
 
+        <div v-else-if="activeTab === 'comparison'" class="tab-content">
+          <!-- Comparaison de résultats -->
+          <ResultsComparison />
+        </div>
+
         <!-- Section d'erreur -->
         <section v-if="error" class="error-section">
           <div class="error-message">
@@ -86,6 +97,7 @@ import ProcessingSteps from './components/ProcessingSteps.vue'
 import ResultsDisplay from './components/ResultsDisplay.vue'
 import SavedResultsViewer from './components/SavedResultsViewer.vue'
 import PDFGenerator from './components/PDFGenerator.vue'
+import ResultsComparison from './components/ResultsComparison.vue'
 import authService from './services/authService.js'
 import resultsService from './services/resultsService.js'
 import './styles/main.css'
@@ -97,7 +109,8 @@ export default {
     ProcessingSteps,
     ResultsDisplay,
     SavedResultsViewer,
-    PDFGenerator
+    PDFGenerator,
+    ResultsComparison
   },
   setup() {
     const selectedFile = ref(null)
@@ -115,7 +128,7 @@ export default {
     // Fonction pour charger l'onglet actif depuis le localStorage
     const loadActiveTab = () => {
       const savedTab = localStorage.getItem('activeTab')
-      if (savedTab && ['extraction', 'consultation', 'pdf'].includes(savedTab)) {
+      if (savedTab && ['extraction', 'consultation', 'pdf', 'comparison'].includes(savedTab)) {
         activeTab.value = savedTab
       }
     }
