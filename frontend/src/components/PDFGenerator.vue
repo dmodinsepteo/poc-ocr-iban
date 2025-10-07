@@ -16,11 +16,60 @@
         </div>
       </div>
       
+      <!-- Filtres par version d'API -->
+      <div class="api-version-filters">
+        <div class="filter-group">
+          <label class="filter-label">Filtrer par version d'API :</label>
+          <div class="filter-options">
+            <label class="filter-option">
+              <input 
+                type="radio" 
+                v-model="apiVersionFilter" 
+                value="all"
+                @change="applyFilters"
+              >
+              <span class="filter-text">Toutes les versions</span>
+            </label>
+            <label class="filter-option">
+              <input 
+                type="radio" 
+                v-model="apiVersionFilter" 
+                value="v1"
+                @change="applyFilters"
+              >
+              <span class="filter-text">API v1 (avant 01/10/2025)</span>
+            </label>
+            <label class="filter-option">
+              <input 
+                type="radio" 
+                v-model="apiVersionFilter" 
+                value="v2"
+                @change="applyFilters"
+              >
+              <span class="filter-text">🚀 API v2 (après 01/10/2025)</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="filter-stats">
+          <span class="filter-stat">
+            Total : {{ savedResults.length }} résultat{{ savedResults.length > 1 ? 's' : '' }}
+          </span>
+          <span class="filter-stat">
+            V1 : {{ v1ResultsCount }} résultat{{ v1ResultsCount > 1 ? 's' : '' }}
+          </span>
+          <span class="filter-stat">
+            V2 : {{ v2ResultsCount }} résultat{{ v2ResultsCount > 1 ? 's' : '' }}
+          </span>
+        </div>
+      </div>
+      
       <div class="pdf-selection-list">
         <div 
-          v-for="result in savedResults" 
+          v-for="result in filteredResults" 
           :key="result.id" 
           class="pdf-selection-item"
+          :class="{ 'v2-result': isV2Result(result) }"
         >
           <label class="pdf-selection-label">
             <input 
@@ -55,7 +104,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import apiResultsService from '../services/apiResultsService.js'
 import validationService from '../services/validationService.js'
 import pdfGeneratorService from '../services/pdfGeneratorService.js'
@@ -67,6 +116,7 @@ export default {
     const validationStatsCache = ref(new Map()) // Cache pour les statistiques
     const generatingPDF = ref(false)
     const selectedForPDF = ref([]) // Résultats sélectionnés pour le PDF
+    const apiVersionFilter = ref('all') // Filtre par version d'API
 
     const loadSavedResults = async () => {
       try {
@@ -97,22 +147,35 @@ export default {
       }
     }
 
+    // Vérifier si un résultat est de la v2 de l'API (après le 01/10/2025)
+    const isV2Result = (result) => {
+      const v2Date = new Date('2025-10-01')
+      const resultDate = new Date(result.savedAt)
+      return resultDate >= v2Date
+    }
+
     // Générer le label pour un résultat avec case à coche
     const getResultLabel = (result) => {
       const stats = validationStatsCache.value.get(result.id)
+      const isV2 = isV2Result(result)
       const baseLabel = `${result.fileName} (${formatDate(result.savedAt)})`
       
+      let prefix = ''
+      if (isV2) {
+        prefix = '🚀 ' // Badge pour v2
+      }
+      
       if (!stats) {
-        return baseLabel
+        return `${prefix}${baseLabel}`
       }
       
       // Vérifier si tous les champs sont validés (validés ou invalides, mais pas non validés)
       const isFullyValidated = stats.unvalidated === 0
       
       if (isFullyValidated) {
-        return `✅ ${baseLabel}`
+        return `${prefix}✅ ${baseLabel}`
       } else {
-        return `⏳ ${baseLabel}`
+        return `${prefix}⏳ ${baseLabel}`
       }
     }
 
@@ -120,9 +183,38 @@ export default {
       return new Date(dateString).toLocaleString('fr-FR')
     }
 
+    // Computed properties pour les filtres
+    const v1ResultsCount = computed(() => {
+      return savedResults.value.filter(result => !isV2Result(result)).length
+    })
+
+    const v2ResultsCount = computed(() => {
+      return savedResults.value.filter(result => isV2Result(result)).length
+    })
+
+    const filteredResults = computed(() => {
+      if (apiVersionFilter.value === 'all') {
+        return savedResults.value
+      } else if (apiVersionFilter.value === 'v1') {
+        return savedResults.value.filter(result => !isV2Result(result))
+      } else if (apiVersionFilter.value === 'v2') {
+        return savedResults.value.filter(result => isV2Result(result))
+      }
+      return savedResults.value
+    })
+
+    // Appliquer les filtres
+    const applyFilters = () => {
+      // Désélectionner les résultats qui ne correspondent plus au filtre
+      selectedForPDF.value = selectedForPDF.value.filter(id => {
+        const result = savedResults.value.find(r => r.id === id)
+        return result && filteredResults.value.includes(result)
+      })
+    }
+
     // Méthodes pour la sélection PDF
     const selectAllResults = () => {
-      selectedForPDF.value = savedResults.value.map(result => result.id)
+      selectedForPDF.value = filteredResults.value.map(result => result.id)
     }
 
     const deselectAllResults = () => {
@@ -203,9 +295,15 @@ export default {
       savedResults,
       selectedForPDF,
       generatingPDF,
+      apiVersionFilter,
+      v1ResultsCount,
+      v2ResultsCount,
+      filteredResults,
       getResultLabel,
+      isV2Result,
       selectAllResults,
       deselectAllResults,
+      applyFilters,
       generatePDF
     }
   }
@@ -334,6 +432,105 @@ export default {
 
   .pdf-selection-item {
     padding: 12px;
+  }
+}
+
+/* Styles pour les filtres par version d'API */
+.api-version-filters {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+}
+
+.filter-group {
+  margin-bottom: 15px;
+}
+
+.filter-label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.filter-options {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.3s ease;
+}
+
+.filter-option:hover {
+  background-color: #f8f9fa;
+}
+
+.filter-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #4d54d1;
+  cursor: pointer;
+}
+
+.filter-text {
+  font-size: 0.9rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.filter-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-top: 15px;
+  border-top: 1px solid #e9ecef;
+}
+
+.filter-stat {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-weight: 500;
+  padding: 4px 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+/* Styles pour les résultats v2 */
+.pdf-selection-item.v2-result {
+  border-left: 4px solid #ff6b6b;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+}
+
+.pdf-selection-item.v2-result:hover {
+  border-color: #ff6b6b;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+}
+
+/* Responsive pour les filtres */
+@media (max-width: 768px) {
+  .filter-options {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .filter-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .filter-stat {
+    text-align: center;
   }
 }
 </style>

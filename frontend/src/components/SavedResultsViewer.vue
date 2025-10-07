@@ -58,7 +58,12 @@
     <!-- Affichage du résultat sélectionné -->
     <div v-if="selectedResult && metadata" class="result-display">
       <div class="result-header">
-        <h3>Résultat : {{ selectedResult.fileName }}</h3>
+        <div class="result-title-section">
+          <h3>Résultat : {{ selectedResult.fileName }}</h3>
+          <div v-if="isV2Result(selectedResult)" class="api-version-badge v2">
+            🚀 API v2
+          </div>
+        </div>
         <div class="result-info">
           <span class="file-size">Taille : {{ formatFileSize(selectedResult.fileSize) }}</span>
           <span class="saved-date">Sauvegardé le : {{ formatDate(selectedResult.savedAt) }}</span>
@@ -235,22 +240,35 @@ export default {
        }
      }
 
+     // Vérifier si un résultat est de la v2 de l'API (après le 01/10/2025)
+     const isV2Result = (result) => {
+       const v2Date = new Date('2025-10-01')
+       const resultDate = new Date(result.savedAt)
+       return resultDate >= v2Date
+     }
+
      // Générer le label pour un résultat avec case à coche
      const getResultLabel = (result) => {
        const stats = validationStatsCache.value.get(result.id)
+       const isV2 = isV2Result(result)
        const baseLabel = `${result.fileName} (${formatDate(result.savedAt)})`
        
+       let prefix = ''
+       if (isV2) {
+         prefix = '🚀 ' // Badge pour v2
+       }
+       
        if (!stats) {
-         return baseLabel
+         return `${prefix}${baseLabel}`
        }
        
        // Vérifier si tous les champs sont validés (validés ou invalides, mais pas non validés)
        const isFullyValidated = stats.unvalidated === 0
        
        if (isFullyValidated) {
-         return `✅ ${baseLabel}`
+         return `${prefix}✅ ${baseLabel}`
        } else {
-         return `⏳ ${baseLabel}`
+         return `${prefix}⏳ ${baseLabel}`
        }
      }
 
@@ -330,11 +348,65 @@ export default {
       isMultipleValues,
       formatDate,
       formatFileSize,
-      getResultLabel
+      getResultLabel,
+      isV2Result
     }
   }
-}
+  }
 </script>
 
- 
+<style scoped>
+/* Styles pour la section de titre et le badge API */
+.result-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.api-version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.api-version-badge.v2 {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: white;
+  box-shadow: 0 2px 8px rgba(238, 90, 36, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(238, 90, 36, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 12px rgba(238, 90, 36, 0.5);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(238, 90, 36, 0.3);
+  }
+}
+
+/* Responsive pour le badge */
+@media (max-width: 768px) {
+  .result-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .api-version-badge {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+}
+</style>
  
