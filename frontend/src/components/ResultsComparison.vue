@@ -470,12 +470,16 @@ export default {
   background: #f8f9fa;
   border-radius: 12px;
   border: 1px solid #dee2e6;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .result-selector {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .select-label {
@@ -491,6 +495,9 @@ export default {
   font-size: 1rem;
   background: white;
   transition: border-color 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .select:focus {
@@ -517,7 +524,7 @@ export default {
 
 .result-header h3 {
   margin: 0 0 10px 0;
-  color: #4d54d1;
+  color: #fff;
   font-size: 1.2rem;
   font-weight: 600;
 }
@@ -527,7 +534,7 @@ export default {
   flex-direction: column;
   gap: 4px;
   font-size: 0.9rem;
-  color: #6c757d;
+  color: #d6d6d6;
 }
 
 .vs-separator {
@@ -748,6 +755,7 @@ export default {
   .selection-section {
     grid-template-columns: 1fr;
     gap: 15px;
+    padding: 15px;
   }
   
   .comparison-headers {
