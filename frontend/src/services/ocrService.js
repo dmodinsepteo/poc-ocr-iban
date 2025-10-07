@@ -65,7 +65,11 @@ class OCRService {
         }
       })
 
-      return response.data.text
+      // Retourner à la fois le texte et le fichier utilisé
+      return {
+        text: response.data.text,
+        file: file // Le fichier qui a été envoyé à l'API
+      }
     }, 'OCR')
   }
 
@@ -90,7 +94,8 @@ class OCRService {
       
       // Étape 1: OCR avec retry
       console.log('📷 Étape 1: Extraction OCR...')
-      const ocrText = await this.performOCR(file)
+      const ocrResult = await this.performOCR(file)
+      const ocrText = ocrResult.text
       console.log('✅ OCR terminé avec succès')
       
       // Étape 2: Extraction des données avec retry

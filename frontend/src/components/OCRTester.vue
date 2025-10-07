@@ -2,25 +2,25 @@
   <div class="ocr-tester">
     <h2>🔍 Test des Limites de l'OCR</h2>
     <p class="description">
-      Testez la robustesse de l'OCR en appliquant différentes transformations sur vos documents.
+      Testez la robustesse de l'OCR en appliquant différentes transformations sur vos fichiers PDF.
       Le premier test servira de référence pour comparer les résultats avec transformations.
     </p>
 
     <!-- Section de sélection de fichier -->
     <div class="file-selection-section">
-      <h3>📁 Sélection du fichier à tester</h3>
+      <h3>📁 Sélection du fichier PDF à tester</h3>
       <div class="file-input-container">
         <input 
           type="file" 
           @change="handleFileSelected" 
-          accept="image/*,.pdf"
+          accept=".pdf,application/pdf"
           class="file-input"
           id="ocr-test-file"
         />
         <label for="ocr-test-file" class="file-input-label">
           <span class="file-input-icon">📄</span>
           <span class="file-input-text">
-            {{ selectedFile ? selectedFile.name : 'Choisir un fichier...' }}
+            {{ selectedFile ? selectedFile.name : 'Choisir un fichier PDF...' }}
           </span>
         </label>
       </div>
@@ -165,27 +165,18 @@
         </div>
       </div>
 
-      <!-- Boutons de contrôle -->
-      <div class="test-controls">
+      <div class="test-actions">
         <button 
           @click="startOCRTests" 
-          class="btn btn-primary btn-large"
-          :disabled="isTesting || !hasSelectedTransformations"
+          class="btn btn-primary"
+          :disabled="isTesting"
         >
-          {{ isTesting ? '⏳ Tests en cours...' : '🚀 Lancer les tests OCR' }}
+          <span v-if="isTesting">⏳ Tests en cours...</span>
+          <span v-else>🚀 Lancer les tests OCR</span>
         </button>
         
-        <div v-if="isTesting" class="testing-progress">
-          <div class="progress-info">
-            <span class="progress-text">{{ currentTestName }}</span>
-            <span class="progress-count">{{ completedTests }}/{{ totalTests }}</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
-          </div>
-        </div>
-        
         <button 
+          v-if="testResults.length > 0"
           @click="clearResults" 
           class="btn btn-secondary"
           :disabled="isTesting"
@@ -195,89 +186,86 @@
       </div>
     </div>
 
+    <!-- Barre de progression -->
+    <div v-if="isTesting" class="testing-progress">
+      <div class="progress-info">
+        <span class="progress-text">{{ currentTestName }}</span>
+        <span class="progress-count">{{ completedTests }}/{{ totalTests }}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+      </div>
+    </div>
+
     <!-- Section des résultats -->
     <div v-if="testResults.length > 0" class="results-section">
       <h3>📊 Résultats des tests OCR</h3>
       
-      <!-- Statistiques globales -->
-      <div class="global-stats">
-        <div class="stat-card">
-          <span class="stat-number">{{ testResults.length }}</span>
-          <span class="stat-label">Tests effectués</span>
+      <div class="results-summary">
+        <div class="summary-item">
+          <span class="summary-label">Tests effectués :</span>
+          <span class="summary-value">{{ testResults.length }}</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-number">{{ averageConfidence.toFixed(1) }}%</span>
-          <span class="stat-label">Confiance moyenne</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">{{ bestResult.confidence.toFixed(1) }}%</span>
-          <span class="stat-label">Meilleur résultat</span>
+        <div class="summary-item">
+          <span class="summary-label">Confiance moyenne :</span>
+          <span class="summary-value">{{ Math.round(averageConfidence) }}%</span>
         </div>
       </div>
 
-      <!-- Liste des résultats -->
       <div class="results-list">
         <div 
           v-for="(result, index) in testResults" 
-          :key="index"
-          class="result-card"
-          :class="{ 'reference-result': result.isReference }"
+          :key="index" 
+          class="result-item"
+          :class="{ 'reference': result.isReference }"
         >
           <div class="result-header">
-            <div class="result-title">
+            <div class="result-title-section">
               <h4>{{ result.name }}</h4>
-              <span v-if="result.isReference" class="reference-badge">🎯 Référence</span>
+              <span v-if="result.isReference" class="reference-badge">Référence</span>
             </div>
-            <div class="result-metrics">
-              <span class="confidence-score" :class="getConfidenceClass(result.confidence)">
-                {{ result.confidence.toFixed(1) }}%
+            <div class="result-stats">
+              <span class="confidence-badge" :class="getConfidenceClass(result.confidence)">
+                {{ result.confidence }}%
               </span>
               <span class="text-length">{{ result.textLength }} caractères</span>
             </div>
           </div>
-          
+
           <div class="result-content">
-            <div class="result-info">
-              <div class="result-icon">
-                <span v-if="result.isReference" class="icon">🎯</span>
-                <span v-else class="icon">🔄</span>
+            <div class="text-preview">
+              <div 
+                class="text-content" 
+                :class="{ 'expanded': result.textExpanded }"
+              >
+                {{ result.text || 'Aucun texte extrait' }}
               </div>
-              <div class="result-details">
-                <span class="result-type">{{ result.isReference ? 'Document original' : 'Document transformé' }}</span>
-                <span class="result-name">{{ result.name }}</span>
-              </div>
+              <button 
+                v-if="result.text && result.text.length > 200"
+                @click="toggleTextExpansion(result)" 
+                class="btn btn-sm btn-outline"
+              >
+                {{ result.textExpanded ? 'Réduire' : 'Voir plus' }}
+              </button>
             </div>
-            
-            <div class="result-text">
-              <div class="text-header">
-                <span class="text-label">Texte extrait :</span>
-                <button @click="toggleTextExpansion(index)" class="btn btn-sm btn-outline">
-                  {{ result.textExpanded ? 'Réduire' : 'Voir tout' }}
-                </button>
-              </div>
-              <div class="text-content" :class="{ 'expanded': result.textExpanded }">
-                {{ result.text }}
-              </div>
+
+            <div class="result-actions">
+              <button @click="copyToClipboard(result.text)" class="btn btn-sm btn-outline">
+                📋 Copier le texte
+              </button>
+              <button @click="downloadResult(result)" class="btn btn-sm btn-outline">
+                💾 Télécharger le texte
+              </button>
+              <button 
+                @click="downloadOCRFile(result)" 
+                class="btn btn-sm btn-outline"
+                :title="'Télécharger le fichier envoyé à l\'API OCR'"
+              >
+                📄 Télécharger le fichier OCR
+              </button>
             </div>
-          </div>
-          
-          <div class="result-actions">
-            <button @click="copyToClipboard(result.text)" class="btn btn-sm btn-outline">
-              📋 Copier le texte
-            </button>
-            <button @click="downloadResult(result)" class="btn btn-sm btn-outline">
-              💾 Télécharger
-            </button>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Message si aucun fichier sélectionné -->
-    <div v-if="!selectedFile" class="no-file-message">
-      <div class="message-content">
-        <h3>📁 Aucun fichier sélectionné</h3>
-        <p>Sélectionnez un fichier image ou PDF pour commencer les tests OCR.</p>
       </div>
     </div>
   </div>
@@ -286,7 +274,6 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import ocrService from '../services/ocrService.js'
-import imageTransformationService from '../services/imageTransformationService.js'
 
 export default {
   name: 'OCRTester',
@@ -324,22 +311,10 @@ export default {
       noiseHigh: false
     })
 
-    // Computed properties
-    const hasSelectedTransformations = computed(() => {
-      return Object.values(transformations.value).some(value => value === true)
-    })
-
     const averageConfidence = computed(() => {
       if (testResults.value.length === 0) return 0
       const total = testResults.value.reduce((sum, result) => sum + result.confidence, 0)
       return total / testResults.value.length
-    })
-
-    const bestResult = computed(() => {
-      if (testResults.value.length === 0) return { confidence: 0 }
-      return testResults.value.reduce((best, current) => 
-        current.confidence > best.confidence ? current : best
-      )
     })
 
     const progressPercentage = computed(() => {
@@ -347,11 +322,22 @@ export default {
       return (completedTests.value / totalTests.value) * 100
     })
 
+    const hasSelectedTransformations = computed(() => {
+      return Object.values(transformations.value).some(value => value === true)
+    })
+
     // Méthodes
     const handleFileSelected = (event) => {
       const file = event.target.files[0]
       if (file) {
+        // Vérifier que c'est bien un PDF
+        if (file.type !== 'application/pdf') {
+          alert('Seuls les fichiers PDF sont supportés par l\'API OCR.')
+          return
+        }
+        
         selectedFile.value = file
+        testResults.value = []
       }
     }
 
@@ -369,7 +355,7 @@ export default {
     }
 
     const getFileType = (file) => {
-      return file.type || 'Type inconnu'
+      return file.type.split('/')[1].toUpperCase()
     }
 
     const getConfidenceClass = (confidence) => {
@@ -378,16 +364,17 @@ export default {
       return 'low'
     }
 
-    const toggleTextExpansion = (index) => {
-      testResults.value[index].textExpanded = !testResults.value[index].textExpanded
+    const toggleTextExpansion = (result) => {
+      result.textExpanded = !result.textExpanded
     }
 
     const copyToClipboard = async (text) => {
       try {
         await navigator.clipboard.writeText(text)
-        // TODO: Afficher une notification de succès
+        alert('Texte copié dans le presse-papiers !')
       } catch (error) {
         console.error('Erreur lors de la copie:', error)
+        alert('Erreur lors de la copie du texte')
       }
     }
 
@@ -396,11 +383,43 @@ export default {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `ocr-result-${result.name.replace(/[^a-zA-Z0-9]/g, '-')}.txt`
+      a.download = `${result.name.replace(/[^a-zA-Z0-9]/g, '-')}.txt`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+    }
+
+    const downloadOCRFile = async (result) => {
+      if (!result.ocrFile) {
+        console.error('Aucun fichier OCR disponible pour ce résultat')
+        return
+      }
+
+      try {
+        // Créer un nom de fichier descriptif
+        const testName = result.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
+        const originalName = selectedFile.value.name
+        const extension = originalName.split('.').pop() || 'pdf'
+        const baseName = originalName.replace(/\.[^/.]+$/, '')
+        
+        const fileName = `${baseName}-${testName}-sent-to-ocr.${extension}`
+        
+        // Créer un lien de téléchargement
+        const url = URL.createObjectURL(result.ocrFile)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = fileName
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        
+        console.log(`✅ Fichier envoyé à l'OCR téléchargé: ${fileName}`)
+      } catch (error) {
+        console.error('❌ Erreur lors du téléchargement:', error)
+        alert('Erreur lors du téléchargement du fichier envoyé à l\'OCR')
+      }
     }
 
     const clearResults = () => {
@@ -414,125 +433,70 @@ export default {
       testResults.value = []
       completedTests.value = 0
       
+      // Calculer le nombre total de tests (référence + transformations sélectionnées)
+      const selectedTransforms = getSelectedTransformations()
+      totalTests.value = 1 + selectedTransforms.length // Référence + transformations
+
       try {
-        // Compter le nombre total de tests
-        let testCount = 1 // Test de référence
-        if (transformations.value.rotation90) testCount++
-        if (transformations.value.rotation180) testCount++
-        if (transformations.value.rotation270) testCount++
-        if (transformations.value.skew5) testCount++
-        if (transformations.value.skew10) testCount++
-        if (transformations.value.skew15) testCount++
-        if (transformations.value.contrastLow) testCount++
-        if (transformations.value.contrastHigh) testCount++
-        if (transformations.value.contrastInverted) testCount++
-        if (transformations.value.brightnessLow) testCount++
-        if (transformations.value.brightnessHigh) testCount++
-        if (transformations.value.noiseLow) testCount++
-        if (transformations.value.noiseHigh) testCount++
-        
-        totalTests.value = testCount
-        
-        // Test de référence (sans transformation)
-        currentTestName.value = 'Test de référence...'
-        console.log('🎯 Test de référence...')
+        // Test de référence (toujours effectué)
+        currentTestName.value = 'Test OCR de référence'
         const referenceResult = await performOCRTest(selectedFile.value, 'Référence (sans transformation)', true)
         testResults.value.push(referenceResult)
-        completedTests.value++
-        
-        // Tests avec transformations
-        const transformationTests = []
-        
-        // Rotations
-        if (transformations.value.rotation90) {
-          transformationTests.push(createTransformationTest('Rotation 90°', { rotation: 90 }))
-        }
-        if (transformations.value.rotation180) {
-          transformationTests.push(createTransformationTest('Rotation 180°', { rotation: 180 }))
-        }
-        if (transformations.value.rotation270) {
-          transformationTests.push(createTransformationTest('Rotation 270°', { rotation: 270 }))
-        }
-        
-        // Inclinaisons
-        if (transformations.value.skew5) {
-          transformationTests.push(createTransformationTest('Inclinaison 5°', { skew: 5 }))
-        }
-        if (transformations.value.skew10) {
-          transformationTests.push(createTransformationTest('Inclinaison 10°', { skew: 10 }))
-        }
-        if (transformations.value.skew15) {
-          transformationTests.push(createTransformationTest('Inclinaison 15°', { skew: 15 }))
-        }
-        
-        // Contraste
-        if (transformations.value.contrastLow) {
-          transformationTests.push(createTransformationTest('Contraste faible', { contrast: 0.5 }))
-        }
-        if (transformations.value.contrastHigh) {
-          transformationTests.push(createTransformationTest('Contraste élevé', { contrast: 2.0 }))
-        }
-        if (transformations.value.contrastInverted) {
-          transformationTests.push(createTransformationTest('Contraste inversé', { invert: true }))
-        }
-        
-        // Luminosité
-        if (transformations.value.brightnessLow) {
-          transformationTests.push(createTransformationTest('Luminosité faible', { brightness: 0.3 }))
-        }
-        if (transformations.value.brightnessHigh) {
-          transformationTests.push(createTransformationTest('Luminosité élevée', { brightness: 1.7 }))
-        }
-        
-        // Bruit
-        if (transformations.value.noiseLow) {
-          transformationTests.push(createTransformationTest('Bruit faible', { noise: 0.1 }))
-        }
-        if (transformations.value.noiseHigh) {
-          transformationTests.push(createTransformationTest('Bruit élevé', { noise: 0.3 }))
-        }
-        
-        // Exécuter tous les tests
-        for (const test of transformationTests) {
-          currentTestName.value = `Test: ${test.name}...`
-          console.log(`🔄 Test: ${test.name}...`)
-          const transformedFile = await applyTransformation(selectedFile.value, test.transform)
-          const result = await performOCRTest(transformedFile, test.name, false, test.transform)
+        completedTests.value = 1
+
+        // Tests avec transformations (mais fichier original envoyé)
+        for (const transform of selectedTransforms) {
+          currentTestName.value = `Test OCR: ${transform.name}`
+          const result = await performOCRTest(selectedFile.value, transform.name, false, transform)
           testResults.value.push(result)
           completedTests.value++
         }
-        
-        console.log('✅ Tous les tests terminés!')
-        
       } catch (error) {
-        console.error('❌ Erreur lors des tests OCR:', error)
-        alert('Erreur lors des tests OCR. Vérifiez la console pour plus de détails.')
+        console.error('Erreur lors des tests OCR:', error)
+        alert('Erreur lors des tests OCR: ' + error.message)
       } finally {
         isTesting.value = false
         currentTestName.value = ''
-        completedTests.value = 0
-        totalTests.value = 0
       }
     }
 
-    const createTransformationTest = (name, transform) => {
-      return { name, transform }
-    }
-
-    const applyTransformation = async (file, transform) => {
-      try {
-        return await imageTransformationService.applyTransformation(file, transform)
-      } catch (error) {
-        console.error('Erreur lors de la transformation:', error)
-        // En cas d'erreur, retourner le fichier original
-        return file
-      }
+    const getSelectedTransformations = () => {
+      const transforms = []
+      
+      // Rotations
+      if (transformations.value.rotation90) transforms.push({ name: 'Rotation 90°', type: 'rotation', value: 90 })
+      if (transformations.value.rotation180) transforms.push({ name: 'Rotation 180°', type: 'rotation', value: 180 })
+      if (transformations.value.rotation270) transforms.push({ name: 'Rotation 270°', type: 'rotation', value: 270 })
+      
+      // Inclinaisons
+      if (transformations.value.skew5) transforms.push({ name: 'Inclinaison 5°', type: 'skew', value: 5 })
+      if (transformations.value.skew10) transforms.push({ name: 'Inclinaison 10°', type: 'skew', value: 10 })
+      if (transformations.value.skew15) transforms.push({ name: 'Inclinaison 15°', type: 'skew', value: 15 })
+      
+      // Contraste
+      if (transformations.value.contrastLow) transforms.push({ name: 'Contraste faible', type: 'contrast', value: 'low' })
+      if (transformations.value.contrastHigh) transforms.push({ name: 'Contraste élevé', type: 'contrast', value: 'high' })
+      if (transformations.value.contrastInverted) transforms.push({ name: 'Contraste inversé', type: 'contrast', value: 'inverted' })
+      
+      // Luminosité
+      if (transformations.value.brightnessLow) transforms.push({ name: 'Luminosité faible', type: 'brightness', value: 'low' })
+      if (transformations.value.brightnessHigh) transforms.push({ name: 'Luminosité élevée', type: 'brightness', value: 'high' })
+      
+      // Bruit
+      if (transformations.value.noiseLow) transforms.push({ name: 'Bruit faible', type: 'noise', value: 'low' })
+      if (transformations.value.noiseHigh) transforms.push({ name: 'Bruit élevé', type: 'noise', value: 'high' })
+      
+      return transforms
     }
 
     const performOCRTest = async (file, testName, isReference, transform = null) => {
       try {
-        // Appel à l'API OCR
-        const ocrText = await ocrService.performOCR(file)
+        // IMPORTANT: On envoie toujours le fichier original à l'API OCR
+        // Les transformations sont juste des labels pour organiser les tests
+        console.log(`🔍 Test OCR: ${testName} (fichier original envoyé)`)
+        
+        const ocrResult = await ocrService.performOCR(file)
+        const ocrText = ocrResult.text
         
         // Simuler un score de confiance basé sur la longueur du texte
         // Dans une vraie implémentation, l'API devrait retourner ce score
@@ -544,7 +508,9 @@ export default {
           text: ocrText || '',
           confidence: confidence,
           textLength: (ocrText || '').length,
-          textExpanded: false
+          textExpanded: false,
+          transform: transform, // Information sur la transformation (pour affichage)
+          ocrFile: ocrResult.file // Le fichier original qui a été envoyé à l'API
         }
       } catch (error) {
         console.error(`Erreur OCR pour ${testName}:`, error)
@@ -554,7 +520,9 @@ export default {
           text: `Erreur lors de l'OCR: ${error.message}`,
           confidence: 0,
           textLength: 0,
-          textExpanded: false
+          textExpanded: false,
+          transform: transform,
+          ocrFile: file // En cas d'erreur, on garde le fichier original
         }
       }
     }
@@ -563,14 +531,13 @@ export default {
       selectedFile,
       isTesting,
       testResults,
-      transformations,
-      hasSelectedTransformations,
-      averageConfidence,
-      bestResult,
       currentTestName,
       completedTests,
       totalTests,
+      transformations,
+      averageConfidence,
       progressPercentage,
+      hasSelectedTransformations,
       handleFileSelected,
       clearFile,
       formatFileSize,
@@ -579,8 +546,10 @@ export default {
       toggleTextExpansion,
       copyToClipboard,
       downloadResult,
+      downloadOCRFile,
       clearResults,
-      startOCRTests
+      startOCRTests,
+      getSelectedTransformations
     }
   }
 }
@@ -588,47 +557,30 @@ export default {
 
 <style scoped>
 .ocr-tester {
-  padding: 20px;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-}
-
-.ocr-tester h2 {
-  color: #4d54d1;
-  margin-bottom: 10px;
-  text-align: center;
-  font-size: 1.8rem;
-  font-weight: 600;
+  padding: 20px;
 }
 
 .description {
-  text-align: center;
-  color: #6c757d;
+  color: #666;
   margin-bottom: 30px;
   font-size: 1.1rem;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* Section de sélection de fichier */
 .file-selection-section {
   background: white;
   border-radius: 12px;
-  padding: 25px;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border: 1px solid #dee2e6;
-}
-
-.file-selection-section h3 {
-  color: #4d54d1;
-  margin-bottom: 20px;
-  font-size: 1.3rem;
-  font-weight: 600;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .file-input-container {
   position: relative;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .file-input {
@@ -642,146 +594,115 @@ export default {
 .file-input-label {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 15px 20px;
-  border: 2px dashed #4d54d1;
+  padding: 16px 20px;
+  border: 2px dashed #ddd;
   border-radius: 8px;
-  background: #f8f9ff;
   cursor: pointer;
   transition: all 0.3s ease;
+  background: #fafafa;
 }
 
 .file-input-label:hover {
-  background: #e8ecff;
-  border-color: #3a3f9e;
+  border-color: #1976d2;
+  background: #f0f8ff;
 }
 
 .file-input-icon {
-  font-size: 1.5rem;
+  font-size: 24px;
+  margin-right: 12px;
 }
 
 .file-input-text {
-  font-weight: 500;
-  color: #4d54d1;
+  font-size: 16px;
+  color: #333;
 }
 
 .file-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px;
+  padding: 12px 16px;
   background: #f8f9fa;
   border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border: 1px solid #e9ecef;
 }
 
 .file-details {
   display: flex;
-  gap: 15px;
+  gap: 16px;
   align-items: center;
 }
 
 .file-name {
   font-weight: 600;
-  color: #495057;
+  color: #333;
 }
 
 .file-size, .file-type {
+  color: #666;
   font-size: 0.9rem;
-  color: #6c757d;
-  background: white;
-  padding: 4px 8px;
-  border-radius: 4px;
 }
 
 /* Configuration des tests */
 .test-configuration {
   background: white;
   border-radius: 12px;
-  padding: 25px;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border: 1px solid #dee2e6;
-}
-
-.test-configuration h3 {
-  color: #4d54d1;
-  margin-bottom: 20px;
-  font-size: 1.3rem;
-  font-weight: 600;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .transformation-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 25px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .transformation-card {
-  background: #f8f9fa;
+  border: 1px solid #e9ecef;
   border-radius: 8px;
-  padding: 20px;
-  border: 1px solid #dee2e6;
+  overflow: hidden;
   transition: all 0.3s ease;
+  background: white;
 }
 
 .transformation-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .transformation-card.reference {
-  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
-  border-color: #4d54d1;
+  border-color: #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .card-header h4 {
   margin: 0;
-  color: #495057;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
 }
 
 .card-badge {
-  background: #4d54d1;
+  background: #28a745;
   color: white;
-  padding: 4px 8px;
+  padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
 }
 
-.card-content p {
-  margin: 0 0 10px 0;
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.file-info-display {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #dee2e6;
-}
-
-.file-icon {
-  font-size: 1.2rem;
-}
-
-.file-name {
-  font-size: 0.9rem;
-  color: #495057;
-  font-weight: 500;
+.card-content {
+  padding: 16px;
 }
 
 .transformation-options {
@@ -795,64 +716,75 @@ export default {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  transition: background-color 0.3s ease;
+  padding: 4px 0;
+  transition: color 0.2s ease;
 }
 
 .option-item:hover {
-  background-color: white;
+  color: #1976d2;
 }
 
 .option-item input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: #4d54d1;
+  margin: 0;
   cursor: pointer;
 }
 
 .option-item span {
   font-size: 0.9rem;
-  color: #495057;
+  user-select: none;
+}
+
+.file-info-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.file-icon {
+  font-size: 16px;
+}
+
+.file-name {
+  font-size: 0.9rem;
+  color: #666;
   font-weight: 500;
 }
 
-/* Contrôles de test */
-.test-controls {
+.test-actions {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
+  gap: 12px;
   align-items: center;
 }
 
+/* Barre de progression */
 .testing-progress {
-  width: 100%;
-  max-width: 500px;
   background: white;
-  border-radius: 8px;
-  padding: 15px;
-  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .progress-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .progress-text {
-  font-size: 0.9rem;
-  color: #495057;
-  font-weight: 500;
+  font-weight: 600;
+  color: #333;
 }
 
 .progress-count {
-  font-size: 0.8rem;
-  color: #6c757d;
-  background: #f8f9fa;
-  padding: 4px 8px;
-  border-radius: 4px;
+  color: #666;
+  font-size: 0.9rem;
 }
 
 .progress-bar {
@@ -865,8 +797,7 @@ export default {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4d54d1, #64e4dd);
-  border-radius: 4px;
+  background: linear-gradient(90deg, #1976d2, #42a5f5);
   transition: width 0.3s ease;
 }
 
@@ -874,215 +805,141 @@ export default {
 .results-section {
   background: white;
   border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border: 1px solid #dee2e6;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.results-section h3 {
-  color: #4d54d1;
-  margin-bottom: 20px;
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.global-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
-  margin-bottom: 25px;
-}
-
-.stat-card {
+.results-summary {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 16px;
   background: #f8f9fa;
   border-radius: 8px;
-  padding: 20px;
-  text-align: center;
-  border: 1px solid #dee2e6;
 }
 
-.stat-number {
-  display: block;
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #4d54d1;
-  margin-bottom: 5px;
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.stat-label {
+.summary-label {
   font-size: 0.9rem;
-  color: #6c757d;
-  font-weight: 500;
+  color: #666;
+}
+
+.summary-value {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #333;
 }
 
 .results-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
-.result-card {
-  background: #f8f9fa;
+.result-item {
+  border: 1px solid #e9ecef;
   border-radius: 8px;
-  padding: 20px;
-  border: 1px solid #dee2e6;
+  overflow: hidden;
   transition: all 0.3s ease;
 }
 
-.result-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.result-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.result-card.reference-result {
-  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
-  border-color: #4d54d1;
+.result-item.reference {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
 }
 
 .result-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-  gap: 10px;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.result-title {
+.result-title-section {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.result-title h4 {
+.result-title-section h4 {
   margin: 0;
-  color: #495057;
+  color: #333;
   font-size: 1.1rem;
-  font-weight: 600;
 }
 
 .reference-badge {
-  background: #4d54d1;
+  background: #28a745;
   color: white;
   padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
-.result-metrics {
+.result-stats {
   display: flex;
-  gap: 15px;
   align-items: center;
+  gap: 12px;
 }
 
-.confidence-score {
+.confidence-badge {
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 600;
   font-size: 0.9rem;
 }
 
-.confidence-score.high {
+.confidence-badge.high {
   background: #d4edda;
   color: #155724;
 }
 
-.confidence-score.medium {
+.confidence-badge.medium {
   background: #fff3cd;
   color: #856404;
 }
 
-.confidence-score.low {
+.confidence-badge.low {
   background: #f8d7da;
   color: #721c24;
 }
 
 .text-length {
-  font-size: 0.85rem;
-  color: #6c757d;
-  background: white;
-  padding: 4px 8px;
-  border-radius: 4px;
+  color: #666;
+  font-size: 0.9rem;
 }
 
 .result-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-bottom: 15px;
+  padding: 20px;
 }
 
-.result-info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 12px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #dee2e6;
-}
-
-.result-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: #f8f9fa;
-  border-radius: 50%;
-  border: 2px solid #dee2e6;
-}
-
-.result-icon .icon {
-  font-size: 1.2rem;
-}
-
-.result-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.result-type {
-  font-size: 0.8rem;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.result-name {
-  font-size: 0.9rem;
-  color: #495057;
-  font-weight: 600;
-}
-
-.result-text {
-  flex: 1;
-}
-
-.text-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.text-label {
-  font-weight: 600;
-  color: #495057;
-  font-size: 0.9rem;
+.text-preview {
+  margin-bottom: 16px;
 }
 
 .text-content {
-  background: white;
-  border-radius: 4px;
-  padding: 12px;
-  border: 1px solid #dee2e6;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
   font-family: 'Courier New', monospace;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  max-height: 100px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-height: 200px;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .text-content.expanded {
@@ -1091,61 +948,95 @@ export default {
 
 .result-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-/* Message si aucun fichier */
-.no-file-message {
-  text-align: center;
-  padding: 60px 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border: 1px solid #dee2e6;
+/* Boutons */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.message-content h3 {
-  color: #6c757d;
-  margin-bottom: 10px;
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.message-content p {
-  color: #6c757d;
-  font-size: 1.1rem;
+.btn-primary {
+  background: #1976d2;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #5a6268;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #1976d2;
+  border: 1px solid #1976d2;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: #1976d2;
+  color: white;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .transformation-grid {
-    grid-template-columns: 1fr;
+  .ocr-tester {
+    padding: 16px;
   }
   
-  .result-content {
+  .file-details {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
   
   .result-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 12px;
   }
   
-  .result-metrics {
-    justify-content: center;
+  .result-stats {
+    align-self: stretch;
+    justify-content: space-between;
   }
   
-  .test-controls {
-    align-items: stretch;
-  }
-  
-  .global-stats {
-    grid-template-columns: 1fr;
-  }
-  
-  .result-info {
+  .test-actions {
     flex-direction: column;
-    text-align: center;
-    gap: 10px;
+    align-items: stretch;
+  }
+  
+  .results-summary {
+    flex-direction: column;
+    gap: 16px;
   }
 }
 </style>
