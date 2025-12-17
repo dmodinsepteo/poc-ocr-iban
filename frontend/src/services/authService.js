@@ -5,11 +5,11 @@ class AuthService {
   constructor() {
     this.authUrl = '/auth-api' // Utilise le proxy local
     this.credentials = {
-      softlaw_client_id: '${VITE_SOFTLAW_CLIENT_ID}',
-      external_user_id: '1234',
-      client_id: '${VITE_CLIENT_ID}',
-      client_secret: '${VITE_CLIENT_SECRET}',
-      pop_uri: 'https://notaryllm-dev.softlaw.ai'
+      softlaw_client_id: import.meta.env.VITE_SOFTLAW_CLIENT_ID || '',
+      external_user_id: import.meta.env.VITE_EXTERNAL_USER_ID || '1234',
+      client_id: import.meta.env.VITE_CLIENT_ID || '',
+      client_secret: import.meta.env.VITE_CLIENT_SECRET || '',
+      pop_uri: import.meta.env.VITE_POP_URI || 'https://notaryllm-dev.softlaw.ai'
     }
     // Utiliser des refs Vue pour la réactivité
     this.token = ref(null)
