@@ -1,31 +1,43 @@
 version: '3.8'
 
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      - DATABASE_URL=file:./dev.db
-      - PORT=3001
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    working_dir: /app
-    command: npm run dev
-
+  # Frontend en production avec Nginx
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
+    container_name: rib-ocr-frontend
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    working_dir: /app
-    command: npm run dev
+      - "3000:80"
+    restart: unless-stopped
     depends_on:
-      - backend 
+      - backend
+    networks:
+      - rib-ocr-network
+
+  # Backend avec Node.js
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rib-ocr-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./data/prod.db
+      - PORT=3001
+    volumes:
+      - backend_data:/app/data
+    restart: unless-stopped
+    networks:
+      - rib-ocr-network
+
+networks:
+  rib-ocr-network:
+    driver: bridge
+
+volumes:
+  backend_data:
+    driver: local

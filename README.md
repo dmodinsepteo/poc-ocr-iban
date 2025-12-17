@@ -16,7 +16,7 @@ Application complète pour l'extraction de coordonnées bancaires depuis des fic
 
 ## 🚀 Installation Rapide
 
-### **1. Installation Complète**
+### **Option 1 : Installation Classique**
 ```bash
 # Cloner le projet
 git clone <votre-repo>
@@ -24,21 +24,62 @@ cd rib-ocr-project
 
 # Installation et configuration automatique
 npm run setup
-```
 
-### **2. Démarrage en Mode Développement**
-```bash
-# Démarrer backend ET frontend simultanément
+# Démarrage en mode développement
 npm run dev
 ```
 
+### **Option 2 : Installation avec Docker (Recommandé)**
+```bash
+# Cloner le projet
+git clone <votre-repo>
+cd rib-ocr-project
+
+# Démarrer l'application complète
+docker-compose up -d
+
+# Voir les logs
+docker-compose logs -f
+
+# Voir les logs d'un service spécifique
+docker-compose logs -f frontend
+docker-compose logs -f backend
+```
+
+> **💡 Avantage Docker** : Environnement isolé, pas d'installation de dépendances locales, déploiement simplifié.
+
 ## 📋 Scripts Disponibles
 
-### **Développement**
+### **Développement (Installation Classique)**
 ```bash
 npm run dev              # Démarre backend + frontend
 npm run dev:backend      # Démarre uniquement le backend
 npm run dev:frontend     # Démarre uniquement le frontend
+```
+
+### **Docker**
+```bash
+# Démarrer l'application complète
+docker-compose up -d
+
+# Arrêter les conteneurs
+docker-compose down
+
+# Voir les logs en temps réel
+docker-compose logs -f
+
+# Voir les logs d'un service spécifique
+docker-compose logs -f frontend
+docker-compose logs -f backend
+
+# Reconstruire les images
+docker-compose build --no-cache
+
+# Redémarrer les services
+docker-compose restart
+
+# Nettoyer complètement
+docker-compose down -v --rmi all
 ```
 
 ### **Base de Données**
@@ -64,21 +105,29 @@ rib-ocr-project/
 │   │   ├── components/    # Composants Vue
 │   │   ├── services/      # Services API
 │   │   └── ...
+│   ├── Dockerfile         # Image Docker frontend (production)
+│   ├── nginx.conf         # Configuration nginx
+│   ├── .dockerignore      # Fichiers ignorés pour Docker
 │   └── package.json
 │
 ├── backend/               # API Express + Prisma
 │   ├── prisma/
 │   │   └── schema.prisma  # Schéma de base de données
 │   ├── server.js          # Serveur Express
+│   ├── Dockerfile         # Image Docker backend (production)
+│   ├── .dockerignore      # Fichiers ignorés pour Docker
 │   └── package.json
 │
+├── docker-compose.yml     # Configuration Docker Compose unifiée
 ├── package.json           # Scripts principaux
 └── README.md
 ```
 
 ## 🔧 Configuration
 
-### **Variables d'Environnement Backend**
+### **Installation Classique**
+
+#### **Variables d'Environnement Backend**
 ```bash
 cd backend
 cp env.example .env
@@ -90,11 +139,31 @@ DATABASE_URL="file:./dev.db"
 PORT=3001
 ```
 
+### **Installation Docker**
+
+Aucune configuration supplémentaire requise. Les variables d'environnement sont définies dans `docker-compose.yml`.
+
+**Architecture Docker :**
+- **Frontend** : Vue.js buildé + Nginx (port 3000)
+- **Backend** : Node.js + Express + Prisma (port 3001)
+- **Base de données** : SQLite persistante dans un volume Docker
+
 ## 🌐 Accès aux Applications
 
+### **Installation Classique**
 - **Frontend** : http://localhost:3000
 - **Backend API** : http://localhost:3001/api
 - **Prisma Studio** : http://localhost:5555 (après `npm run db:studio`)
+
+### **Installation Docker**
+- **Frontend** : http://localhost:3000
+- **Backend API** : http://localhost:3001/api
+- **Logs en temps réel** : `docker-compose logs -f`
+
+## 📚 Documentation
+
+- **Guide principal** : Ce README
+- **Architecture** : [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## 🔌 API Endpoints
 
@@ -108,6 +177,11 @@ PORT=3001
 - `GET /api/results/search?q=query` - Recherche dans les résultats
 - `GET /api/results/count` - Compte les résultats
 - `GET /api/health` - Vérification de l'état du serveur
+
+### **Validation**
+- `POST /api/validations` - Sauvegarder une validation
+- `GET /api/validations/result/:resultId` - Récupérer les validations d'un résultat
+- `GET /api/validations/stats/:resultId` - Statistiques de validation
 
 ## 🛠️ Développement
 
@@ -144,6 +218,7 @@ npm run dev
 ### **Schéma Prisma**
 - **ExtractionResult** : Résultats d'extraction principaux
 - **FileMetadata** : Métadonnées détaillées des champs
+- **FieldValidation** : Validations des champs extraits
 
 ### **Commandes Utiles**
 ```bash
@@ -171,6 +246,59 @@ npm run dev
 # Frontend
 cd frontend
 npm run dev
+
+# Docker
+docker-compose logs -f
+```
+
+## 🐛 Dépannage Docker
+
+### **Problèmes courants**
+
+#### **1. Ports déjà utilisés**
+```bash
+# Vérifier les ports utilisés
+netstat -tulpn | grep :3000
+netstat -tulpn | grep :3001
+
+# Arrêter les processus utilisant les ports
+sudo lsof -ti:3000 | xargs kill -9
+sudo lsof -ti:3001 | xargs kill -9
+```
+
+#### **2. Problèmes de build**
+```bash
+# Nettoyer complètement
+docker-compose down --rmi all --volumes --remove-orphans
+docker system prune -f
+
+# Reconstruire
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+#### **3. Base de données corrompue**
+```bash
+# Supprimer le volume de la base de données
+docker-compose down -v
+docker volume rm rib-ocr-project_backend_data
+
+# Redémarrer pour recréer la base
+docker-compose up -d
+```
+
+#### **4. Erreur "nodemon: not found"**
+```bash
+# Reconstruire le backend
+docker-compose build --no-cache backend
+docker-compose up -d backend
+```
+
+#### **5. Erreur Prisma OpenSSL**
+```bash
+# Reconstruire le backend
+docker-compose build --no-cache backend
+docker-compose up -d backend
 ```
 
 ## 🚀 Production
@@ -184,12 +312,20 @@ npm run build
 npm run start
 ```
 
+### **Docker Production**
+```bash
+# Modifier docker-compose.yml pour la production
+# Changer NODE_ENV=production
+docker-compose up -d
+```
+
 ## 📝 Notes
 
 - Le backend doit être démarré avant le frontend
 - La base de données SQLite est créée automatiquement dans `backend/dev.db`
 - Les migrations Prisma sont appliquées automatiquement au démarrage
 - Utilisez `npm run dev` pour démarrer les deux services simultanément
+- En Docker, les volumes sont persistants pour la base de données
 
 ## 🤝 Contribution
 
