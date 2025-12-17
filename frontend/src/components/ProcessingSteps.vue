@@ -267,7 +267,8 @@ export default {
       
       try {
         interceptConsole()
-        ocrText.value = await ocrService.performOCR(props.selectedFile)
+        const ocrResult = await ocrService.performOCR(props.selectedFile)
+        ocrText.value = ocrResult.text
         emit('ocr-completed', ocrText.value)
       } catch (error) {
         console.error('Erreur OCR:', error)
