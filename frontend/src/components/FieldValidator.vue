@@ -39,7 +39,7 @@
     </div>
 
     <!-- Statut de sauvegarde -->
-    <div v-if="saveStatus" class="save-status" :class="saveStatus">
+    <div class="save-status" :class="saveStatus">
       {{ saveStatus === 'success' ? '✅ Sauvegardé' : saveStatus === 'error' ? '❌ Erreur' : '' }}
     </div>
   </div>
@@ -256,17 +256,28 @@ export default {
   text-align: center;
   padding: 4px;
   border-radius: 4px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
 }
 
 .save-status.success {
   background: #d4edda;
   color: #155724;
   border: 1px solid #c3e6cb;
+  opacity: 1;
+  visibility: visible;
 }
 
 .save-status.error {
   background: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+  opacity: 1;
+  visibility: visible;
 }
 </style>
